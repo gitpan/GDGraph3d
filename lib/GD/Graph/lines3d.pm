@@ -14,6 +14,7 @@
 # 1999SEP19 Polygon'd linewidth rendering                               JAW
 # 2000SEP19 Converted to a GD::Graph class                              JAW
 # 2000APR18 Modified for compatibility with GD::Graph 1.30              JAW
+# 2000APR24 Fixed a lot of rendering bugs                               JAW
 #==========================================================================
 # TODO
 #		* Write a draw_data_set that draws the line so they appear to pass 
@@ -30,7 +31,7 @@ use GD;
 use GD::Graph::axestype3d;
 
 @GD::Graph::lines3d::ISA = qw( GD::Graph::axestype3d );
-$GD::Graph::lines3d::VERSION = '0.40';
+$GD::Graph::lines3d::VERSION = '0.41';
 
 my %Defaults = (
 	# The depth of the line in their extrusion

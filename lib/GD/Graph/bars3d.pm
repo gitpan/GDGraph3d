@@ -17,6 +17,7 @@
 # 2000JAN19 Converted to GD::Graph class                                JAW
 # 2000MAR10 Fixed bug where bars ran off bottom of chart                JAW
 # 2000APR18 Modified to be compatible with GD::Graph 1.30               JAW
+# 2000APR24 Fixed a lot of rendering bugs and added shading             JAW
 #==========================================================================
 package GD::Graph::bars3d;
 
@@ -27,7 +28,7 @@ use GD::Graph::utils qw(:all);
 use GD::Graph::colour qw(:colours);
 
 @GD::Graph::bars3d::ISA = qw(GD::Graph::axestype3d);
-$GD::Graph::bars3d::VERSION = '0.40';
+$GD::Graph::bars3d::VERSION = '0.41';
 
 my %Defaults = (
 	# Spacing between the bars
@@ -42,6 +43,7 @@ sub initialise
 	my $self = shift;
 
 	my $rc = $self->SUPER::initialise();
+	$self->set(correct_width => 1);
 
 	while( my($key, $val) = each %Defaults ) { 
 		$self->{$key} = $val 
@@ -85,21 +87,18 @@ sub draw_data
 	my $zero = $self->{zeropoint};
 
 	my $i;
-	for $i (0 .. $self->{_data}->num_points()) 
-	{
+	for $i (0 .. $self->{_data}->num_points()) {
 		my ($xp, $t);
 		my $overwrite = 0;
 		$overwrite = $self->{overwrite} if defined $self->{overwrite};
 		
 		my $j;
-		for $j (1 .. $self->{_data}->num_sets()) 
-		{
+		for $j (1 .. $self->{_data}->num_sets()) {
 			my $value = $self->{_data}->get_y( $j, $i );
 			next unless defined $value;
 
 			my $bottom = $self->_get_bottom($j, $i);
-	
-			$value = $self->{_data}->get_y_cumulative($j, $i)
+				$value = $self->{_data}->get_y_cumulative($j, $i)
 				if ($self->{cumulate});
 
 			# Pick a data colour
@@ -115,12 +114,6 @@ sub draw_data
 			$brci = $self->set_clr($self->pick_data_clr($i + 1))
 				if $self->{cycle_clrs} > 1;
 
-
-			# If two axes and on second set, adjust zero point
-			if( $self->{two_axes} ) {
-				(undef, $bottom) = $self->val_to_pixel(1, 0, $j);
-			} # end if
-
 			# get coordinates of top and center of bar
 			($xp, $t) = $self->val_to_pixel($i + 1, $value, $j);
 
@@ -128,8 +121,8 @@ sub draw_data
 			my $x_offset = 0;
 			my $y_offset = 0;
 			if( $overwrite == 1 ) {
-				$x_offset = $self->{bar_depth} * ($self->{numsets} - $j);
-				$y_offset = $self->{bar_depth} * ($self->{numsets} - $j);
+				$x_offset = $self->{bar_depth} * ($self->{_data}->num_sets() - $j);
+				$y_offset = $self->{bar_depth} * ($self->{_data}->num_sets() - $j);
 			}
 			$t -= $y_offset;
 
@@ -138,39 +131,31 @@ sub draw_data
 			my ($l, $r);
 			if( (ref $self eq 'GD::Graph::mixed') || ($overwrite >= 1) )
 			{
-				$l = $xp - _round($self->{x_step}/2) + $bar_s + $x_offset;
-				$r = $xp + _round($self->{x_step}/2) - $bar_s + $x_offset;
+				$l = $xp - $self->{x_step}/2 + $bar_s + $x_offset;
+				$r = $xp + $self->{x_step}/2 - $bar_s + $x_offset;
 			}
 			else
 			{
 				$l = $xp 
-					- _round($self->{x_step}/2)
-					+ _round(($j - 1) * $self->{x_step}/$self->{_data}->num_sets())
+					- $self->{x_step}/2
+					+ ($j - 1) * $self->{x_step}/$self->{_data}->num_sets()
 					+ $bar_s + $x_offset;
 				$r = $xp 
-					- _round($self->{x_step}/2)
-					+ _round($j * $self->{x_step}/$self->{_data}->num_sets())
+					- $self->{x_step}/2
+					+ $j * $self->{x_step}/$self->{_data}->num_sets()
 					- $bar_s + $x_offset;
 			}
 
-			# calculate new top
-			$t -= ($zero - $bottom) if ($self->{overwrite} == 2);
-
-			if ($value >= 0)
-			{
+			if ($value >= 0) {
 				# draw the positive bar
 				$self->draw_bar( $g, $l, $t, $r, $bottom-$y_offset, $dsci, $brci, 0 )
-			}
-			else
-			{
+			} else {
 				# draw the negative bar
 				$self->draw_bar( $g, $l, $bottom-$y_offset, $r, $t, $dsci, $brci, -1 )
-			}
+			} # end if
 
-			# reset $bottom to the top
-			$bottom = $t if ($self->{overwrite} == 2);
-		}
-	}
+		} # end for
+	} # end for
 
 
 	# redraw the 'zero' axis, front and right
@@ -254,7 +239,6 @@ sub draw_bar {
 
 	} # end if
 
-
 	# side
 	my $poly = new GD::Polygon;
 	$poly->addPt( $r, $t );
@@ -281,6 +265,27 @@ sub draw_bar {
 	$g->rectangle( $l, $t, $r, $b, $brci );
 
 } # end draw_bar
+
+# [JAW] Overrides axestype's set_max_min. 
+# Go through the parent's process then adjust the baseline to 0 for bar graphs.
+sub set_max_min {
+	my $self = shift;
+
+	$self->SUPER::set_max_min( @_ );
+	
+	# This code is taken from Martien's axestype.pm
+	for my $i (1..($self->{two_axes} ? 2 : 1)) {
+		# If at the same side of the zero axis
+		if( $self->{y_max}[$i] && $self->{y_min}[$i]/$self->{y_max}[$i] > 0 ) {
+			$self->{y_min}[$i] > 0 ? 
+			$self->{y_min}[$i] = 0 : 
+			$self->{y_max}[$i] = 0 ;
+		} # end if
+	} # end for
+
+	return $self;
+} # end set_max_min
+
 
 1;
 

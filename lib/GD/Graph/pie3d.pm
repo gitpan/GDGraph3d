@@ -12,6 +12,7 @@
 # Date      Modification                               Author
 # ----------------------------------------------------------
 # 2000APR18 Modified to be compatible w/ GD::Graph 1.30  JAW
+# 2000APR24 Set default slice label color to black       JAW
 ############################################################
 package GD::Graph::pie3d;
 
@@ -22,19 +23,23 @@ use GD::Graph::pie;
 use Carp;
 
 @GD::Graph::pie3d::ISA = qw( GD::Graph::pie );
-$GD::Graph::pie3d::VERSION = '0.40';
+$GD::Graph::pie3d::VERSION = '0.41';
 
 my %Defaults = (
-	'3d'        => 1,
+	'3d'         => 1,
+	axislabelclr => 'black',	# values on slices. black because defaults colors use dblue
 );
 
 sub initialise {
 	my $self = shift;
 	my $rc = $self->SUPER::initialise();
+
 	while( my($key, $val) = each %Defaults ) { 
 		$self->{$key} = $val;
 	} # end while
+
 	return $rc;
+
 } # end initialise
 
 # Inherit everything else from GD::Graph::pie

@@ -74,38 +74,47 @@ sub initialise
 # PRIVATE
 
 # inherit check_data from GD::Graph
-# Inherit setup_boundaries
 
-# [JAW] Calls super, then add's 3d extrusion depth, adjusts 
-# coordinate and boundaris and rechecl boundary condtions
-sub setup_coords
+# [JAW] Setup boundaries as parent, the adjust for 3d extrusion
+sub _setup_boundaries
 {
 	my $self = shift;
 
-	$self->SUPER::setup_coords();
+	$self->SUPER::_setup_boundaries();
+
+	# adjust for top of 3-d extrusion
+	$self->{top} += $self->{depth_3d};
+
+	return $self->_set_error('Vertical size too small')
+		if $self->{bottom} <= $self->{top};
+	
+	# adjust for right of 3-d extrusion
+	$self->{right} -= $self->{depth_3d};
+
+	return $self->_set_error('Horizontal size too small')	
+		if $self->{right} <= $self->{left};
+
+	return $self;
+} # end _setup_boundaries
+
+# [JAW] Determine 3d-extrusion depth, then call parent
+sub setup_coords
+{
+	my $self = shift;
 
 	# Calculate the 3d-depth of the graph
 	# Note this sets a minimum depth of ~20 pixels
 	if (!defined $self->{x_tick_number}) {
 		my $depth = _max( $self->{bar_depth}, $self->{line_depth} );
+		if( $self->{overwrite} == 1 ) {
+			$depth *= $self->{_data}->num_sets();
+		} # end if
 	   $self->{depth_3d} = _max( $depth, $self->{depth_3d} );
 	} # end if
-	
-	# adjust for top of 3-d extrusion
-	$self->{top} += $self->{depth_3d};
 
-	# adjust for right of 3-d extrusion
-	$self->{right} -= $self->{depth_3d};
-
-	# recheck boundary conditions
-	return $self->_set_error('Horizontal size too small')	
-		if $self->{right} <= $self->{left};
-
-	return $self->_set_error('Vertical size too small')
-		if $self->{bottom} <= $self->{top};
+	$self->SUPER::setup_coords();
 
 	return $self;
-	
 } # end setup_coords
 
 # Inherit create_y_labels
@@ -167,6 +176,8 @@ sub draw_axes
 		$g->rectangle($l, $t, $r, $b, $s->{fgci});
 
 	} else {
+		# Back box
+		$g->rectangle($l + $depth, $t - $depth, $r + $depth, $b - $depth, $s->{fgci});
 
 		# Y axis
 		my $poly = new GD::Polygon;
@@ -207,7 +218,7 @@ sub draw_axes
 		$g->polygon( $poly, $s->{fgci} );
 	} # end if
 	
-} # end draw_exes
+} # end draw_axes
 
 # [JAW] Draws ticks and values for y axes in 3d extrusion
 # Modified from MVERB source
@@ -521,7 +532,6 @@ sub draw_x_ticks_number
 # Inherit get_max_y
 # Inherit get_min_y
 # Inherit get_max_min_y_all
-# Inherit _best_ends 
 # Inherit _get_bottom
 # Inherit val_to_pixel
 # Inherit setup_legend
