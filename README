@@ -12,6 +12,7 @@ DESCRIPTION
     GD::Graph.
 
 CHANGES
+	0.31 Fixed bug in version data.
 	0.30 Initial CPAN Release.
 
 INSTALLATION
