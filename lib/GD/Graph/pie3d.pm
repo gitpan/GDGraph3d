@@ -23,7 +23,7 @@ use GD::Graph::pie;
 use Carp;
 
 @GD::Graph::pie3d::ISA = qw( GD::Graph::pie );
-$GD::Graph::pie3d::VERSION = '0.54';
+$GD::Graph::pie3d::VERSION = '0.55';
 
 my %Defaults = (
 	'3d'         => 1,

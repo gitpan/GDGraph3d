@@ -19,6 +19,7 @@
 # 2000AUG21 Added 3d shading                                            JAW
 # 2000AUG24 Fixed shading top/botttom vs. postive/negative slope        JAW
 # 2000SEP04 For single point "lines" made a short segment               JAW
+# 2000OCT09 Fixed bug in rendering of legend                            JAW
 #==========================================================================
 # TODO
 #		** The new mitred corners don't work well at data anomlies. Like
@@ -38,7 +39,7 @@ use GD::Graph::axestype3d;
 use Data::Dumper;
 
 @GD::Graph::lines3d::ISA = qw( GD::Graph::axestype3d );
-$GD::Graph::lines3d::VERSION = '0.54';
+$GD::Graph::lines3d::VERSION = '0.55';
 
 my $PI = 4 * atan2(1, 1);
 
@@ -268,7 +269,7 @@ sub draw_data_overwrite {
 #
 # Args: $prev, $this, $next, $type, $clr
 #	$prev       A hash ref for the prev point's object
-#	$prev       A hash ref for this point's object
+#	$this       A hash ref for this point's object
 #	$next       A hash ref for the next point's object
 #	$type       A predefined line type (2..4) = (dashed, dotted, dashed & dotted)
 #	$clr        The color (colour) index to use for the fill
@@ -480,8 +481,22 @@ sub draw_line
 
 } # end draw line
 
-# Copied from MVERB source
-sub draw_legend_marker # (data_set_number, x, y)
+# ----------------------------------------------------------
+# Sub: draw_legend_marker
+#
+# Args: $dsn, $x, $y
+#	$dsn	The dataset number to draw the marker for
+#	$x  	The x position of the marker
+#	$y  	The y position of the marker
+#
+# Description: Draws the legend marker for the specified 
+# dataset number at the given coordinates
+# ----------------------------------------------------------
+# Date      Modification                              Author
+# ----------------------------------------------------------
+# 2000OCT06 Fixed rendering bugs                          JW
+# ----------------------------------------------------------
+sub draw_legend_marker
 {
 	my $self = shift;
 	my ($n, $x, $y) = @_;
@@ -495,10 +510,13 @@ sub draw_legend_marker # (data_set_number, x, y)
 	local($self->{line_width}) = 2;    # Make these show up better
 
 	$self->draw_line(
-		$x, $y, 
-		$x + $self->{legend_marker_width}, $y,
-		$type, $ci
+		{ coords => [$x, $y] }, 
+		{ coords => [$x + $self->{legend_marker_width}, $y] }, 
+		undef, 
+		$type,
+		$ci
 	);
-}
+
+} # end draw_legend_marker
 
 1;
