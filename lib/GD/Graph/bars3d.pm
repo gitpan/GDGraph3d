@@ -1,21 +1,22 @@
 #==========================================================================
-# Module: GIFgraph::bars3d
+# Module: GD::Graph::bars3d
 #
 # Copyright (C) 1999,2000 Wadsack-Allen. All Rights Reserved.
 #
-# Based on GD::Graph::bars.pm,v 1.5 2000/01/07 13:44:42 mgjv
+# Based on GD::Graph::bars.pm,v 1.16 2000/03/18 10:58:39 mgjv
 #          Copyright (c) 1995-1998 Martien Verbruggen
 #
 #--------------------------------------------------------------------------
-# Date      Modification                                            Author
+# Date      Modification                                             Author
 # -------------------------------------------------------------------------
-# 1999SEP18 Created 3D bar chart class (this module)                JAW
-# 1999SEP19 Rewrote to include a single bar-drawing                 JAW
+# 1999SEP18 Created 3D bar chart class (this module)                    JAW
+# 1999SEP19 Rewrote to include a single bar-drawing                     JAW
 #           function and process all bars in series
-# 1999SEP19 Implemented support for overwrite 2 style               JAW
-# 1999SEP19 Fixed a bug in color cycler (colors were off by 1)      JAW
-# 2000JAN19 Converted to GD::Graph class                            JAW
-# 2000MAR10 Fixed bug where bars ran off bottom of chart            JAW
+# 1999SEP19 Implemented support for overwrite 2 style                   JAW
+# 1999SEP19 Fixed a bug in color cycler (colors were off by 1)          JAW
+# 2000JAN19 Converted to GD::Graph class                                JAW
+# 2000MAR10 Fixed bug where bars ran off bottom of chart                JAW
+# 2000APR18 Modified to be compatible with GD::Graph 1.30               JAW
 #==========================================================================
 package GD::Graph::bars3d;
 
@@ -26,7 +27,7 @@ use GD::Graph::utils qw(:all);
 use GD::Graph::colour qw(:colours);
 
 @GD::Graph::bars3d::ISA = qw(GD::Graph::axestype3d);
-$GD::Graph::bars3d::VERSION = '0.34';
+$GD::Graph::bars3d::VERSION = '0.40';
 
 my %Defaults = (
 	# Spacing between the bars
@@ -36,18 +37,18 @@ my %Defaults = (
 	bar_depth => 10,
 );
 
-sub initialise()
+sub initialise
 {
 	my $self = shift;
 
-	$self->SUPER::initialise();
+	my $rc = $self->SUPER::initialise();
 
-	my $key;
-	foreach $key (keys %Defaults)
-	{
-		$self->set( $key => $Defaults{$key} );
-	}
-}
+	while( my($key, $val) = each %Defaults ) { 
+		$self->{$key} = $val 
+	} # end while
+
+	return $rc;
+} # end initialise
 
 sub set
 {
@@ -76,116 +77,124 @@ sub set
 # require that the bars be drawn in a loop of point over sets
 sub draw_data
 {
-	my $s = shift;
-	my $d = shift;
-	my $g = $s->{graph};
+	my $self = shift;
+	my $g = $self->{graph};
 
-	my $bar_s = _round($s->{bar_spacing}/2);
+	my $bar_s = _round($self->{bar_spacing}/2);
 
-	my $zero = $s->{zeropoint};
+	my $zero = $self->{zeropoint};
 
 	my $i;
-	for $i (0 .. $s->{numpoints}) 
+	for $i (0 .. $self->{_data}->num_points()) 
 	{
-		my $bottom = _min( $zero, $s->{bottom} );
 		my ($xp, $t);
 		my $overwrite = 0;
-		$overwrite = $s->{overwrite} if defined $s->{overwrite};
+		$overwrite = $self->{overwrite} if defined $self->{overwrite};
 		
 		my $j;
-		for $j (1 .. $s->{numsets}) 
+		for $j (1 .. $self->{_data}->num_sets()) 
 		{
-			next unless (defined $d->[$j][$i]);
+			my $value = $self->{_data}->get_y( $j, $i );
+			next unless defined $value;
 
-			# get data colour
-			my $dsci = $s->set_clr( $s->pick_data_clr($j) );
-			
+			my $bottom = $self->_get_bottom($j, $i);
+	
+			$value = $self->{_data}->get_y_cumulative($j, $i)
+				if ($self->{cumulate});
+
+			# Pick a data colour
+			my $dsci = $self->set_clr($self->pick_data_clr($j));
+
 			# contrib "Bremford, Mike" <mike.bremford@gs.com>
-			my $brci = $s->set_clr( $s->pick_border_clr($j) );
+			my $brci = $self->set_clr($self->pick_border_clr($j));
 
 			# cycle_clrs option sets the color based on the point, 
 			# not the dataset.
-			if( $s->{cycle_clrs} == 1 ) {
-				$dsci = $s->set_clr( $s->pick_data_clr($i + 1) );
-				$brci = $s->set_clr( $s->pick_border_clr( $i + 1 ) );
-			} # end if
+			$dsci = $self->set_clr($self->pick_data_clr($i + 1))
+				if $self->{cycle_clrs};
+			$brci = $self->set_clr($self->pick_data_clr($i + 1))
+				if $self->{cycle_clrs} > 1;
 
 
 			# If two axes and on second set, adjust zero point
-			if( $s->{two_axes} ) {
-				(undef, $bottom) = $s->val_to_pixel(1, 0, $j);
+			if( $self->{two_axes} ) {
+				(undef, $bottom) = $self->val_to_pixel(1, 0, $j);
 			} # end if
 
 			# get coordinates of top and center of bar
-			($xp, $t) = $s->val_to_pixel($i + 1, $d->[$j][$i], $j);
+			($xp, $t) = $self->val_to_pixel($i + 1, $value, $j);
 
 			# calculate offsets of this bar
 			my $x_offset = 0;
 			my $y_offset = 0;
 			if( $overwrite == 1 ) {
-				$x_offset = $s->{bar_depth} * ($s->{numsets} - $j);
-				$y_offset = $s->{bar_depth} * ($s->{numsets} - $j);
+				$x_offset = $self->{bar_depth} * ($self->{numsets} - $j);
+				$y_offset = $self->{bar_depth} * ($self->{numsets} - $j);
 			}
 			$t -= $y_offset;
 
 
 			# calculate left and right of bar
 			my ($l, $r);
-			if( ($s->{mixed}) || ($overwrite >= 1) )
+			if( (ref $self eq 'GD::Graph::mixed') || ($overwrite >= 1) )
 			{
-				$l = $xp - _round($s->{x_step}/2) + $bar_s + $x_offset;
-				$r = $xp + _round($s->{x_step}/2) - $bar_s + $x_offset;
+				$l = $xp - _round($self->{x_step}/2) + $bar_s + $x_offset;
+				$r = $xp + _round($self->{x_step}/2) - $bar_s + $x_offset;
 			}
 			else
 			{
 				$l = $xp 
-					- _round($s->{x_step}/2)
-					+ _round(($j - 1) * $s->{x_step}/$s->{numsets})
+					- _round($self->{x_step}/2)
+					+ _round(($j - 1) * $self->{x_step}/$self->{_data}->num_sets())
 					+ $bar_s + $x_offset;
 				$r = $xp 
-					- _round($s->{x_step}/2)
-					+ _round($j * $s->{x_step}/$s->{numsets})
+					- _round($self->{x_step}/2)
+					+ _round($j * $self->{x_step}/$self->{_data}->num_sets())
 					- $bar_s + $x_offset;
 			}
 
 			# calculate new top
-			$t -= ($zero - $bottom) if ($s->{overwrite} == 2);
+			$t -= ($zero - $bottom) if ($self->{overwrite} == 2);
 
-			if ($d->[$j][$i] >= 0)
+			if ($value >= 0)
 			{
 				# draw the positive bar
-				$s->draw_bar( $g, $l, $t, $r, $bottom-$y_offset, $dsci, $brci, 0 )
+				$self->draw_bar( $g, $l, $t, $r, $bottom-$y_offset, $dsci, $brci, 0 )
 			}
 			else
 			{
 				# draw the negative bar
-				$s->draw_bar( $g, $l, $bottom-$y_offset, $r, $t, $dsci, $brci, -1 )
+				$self->draw_bar( $g, $l, $bottom-$y_offset, $r, $t, $dsci, $brci, -1 )
 			}
 
 			# reset $bottom to the top
-			$bottom = $t if ($s->{overwrite} == 2);
+			$bottom = $t if ($self->{overwrite} == 2);
 		}
 	}
 
 
 	# redraw the 'zero' axis, front and right
-	if( $s->{zero_axis} ) {
+	if( $self->{zero_axis} ) {
 		$g->line( 
-			$s->{left}, $s->{zeropoint}, 
-			$s->{right}, $s->{zeropoint}, 
-			$s->{fgci} );
+			$self->{left}, $self->{zeropoint}, 
+			$self->{right}, $self->{zeropoint}, 
+			$self->{fgci} );
 		$g->line( 
-			$s->{right}, $s->{zeropoint}, 
-			$s->{right}+$s->{depth_3d}, $s->{zeropoint}-$s->{depth_3d}, 
-			$s->{fgci} );
+			$self->{right}, $self->{zeropoint}, 
+			$self->{right}+$self->{depth_3d}, $self->{zeropoint}-$self->{depth_3d}, 
+			$self->{fgci} );
 	} # end if
 
 	# redraw the box face
-	if ( $s->{box_axis} ) {
+	if ( $self->{box_axis} ) {
 		# Axes box
-		$g->rectangle($s->{left}, $s->{top}, $s->{right}, $s->{bottom}, $s->{fgci});
+		$g->rectangle($self->{left}, $self->{top}, $self->{right}, $self->{bottom}, $self->{fgci});
+		$g->line($self->{right}, $self->{top}, $self->{right} + $self->{depth_3d}, $self->{top} - $self->{depth_3d}, $self->{fgci});
+		$g->line($self->{right}, $self->{bottom}, $self->{right} + $self->{depth_3d}, $self->{bottom} - $self->{depth_3d}, $self->{fgci});
 	} # end if
 
+	return $self;
+	
 } # end draw_data
 
 # CONTRIB Jeremy Wadsack
@@ -193,16 +202,16 @@ sub draw_data
 # coordinates. This is called in all three 
 # overwrite modes.
 sub draw_bar {
-	my $s = shift;
+	my $self = shift;
 	my $g = shift;
 	my( $l, $t, $r, $b, $dsci, $brci, $neg ) = @_;
 	
 	# get depth of the bar
-	my $depth = $s->{bar_depth};
+	my $depth = $self->{bar_depth};
 
 	# get the bar shadow depth and color
-	my $bsd = $s->{shadow_depth};
-	my $bsci = $s->set_clr(_rgb($s->{shadowclr}));
+	my $bsd = $self->{shadow_depth};
+	my $bsci = $self->set_clr(_rgb($self->{shadowclr}));
 
 	my( $xi );
 
@@ -213,10 +222,10 @@ sub draw_bar {
 		
 		if( $neg != 0 ) {
 			$st -= $bsd;
-			if( $s->{zero_axis_only} ) {
+			if( $self->{zero_axis_only} ) {
 				$sb += $bsd;
 			} else {
-				$sb = _min($b-$depth+$bsd, $s->{bottom}-$depth);
+				$sb = _min($b-$depth+$bsd, $self->{bottom}-$depth);
 			} # end if
 		} # end if
 
@@ -234,7 +243,7 @@ sub draw_bar {
 
 		# Only draw bottom shadow if at the bottom and has bottom 
 		# axis. Always draw top shadow
-		if( ($neg == 0) || ($sb >= $s->{bottom}-$depth) ) {
+		if( ($neg == 0) || ($sb >= $self->{bottom}-$depth) ) {
 			my $poly = new GD::Polygon;
 			$poly->addPt( $r, $b );
 			$poly->addPt( $r+$bsd, $b );
@@ -257,7 +266,7 @@ sub draw_bar {
 
 	# top
 	#	-- only draw negative tops if the bar starts at zero
-	if( ($neg == 0) || ($t <= $s->{zeropoint}) ) {
+	if( ($neg == 0) || ($t <= $self->{zeropoint}) ) {
 		$poly = new GD::Polygon;
 		$poly->addPt( $l, $t );
 		$poly->addPt( $l+$depth, $t-$depth );

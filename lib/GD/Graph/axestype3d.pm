@@ -1,20 +1,21 @@
 #==========================================================================
-# Module: GIFgraph::axestype3d
+# Module: GD::Graph::axestype3d
 #
 # Copyright (C) 1999,2000 Wadsack-Allen. All Rights Reserved.
 #
-# Based on axestype.pm,v 1.10 2000/01/09 12:43:58 mgjv
+# Based on axestype.pm,v 1.21 2000/04/15 08:59:36 mgjv
 #          Copyright (c) 1995-1998 Martien Verbruggen
 #
 #--------------------------------------------------------------------------
-# Date		Modification				                  Author
+# Date		Modification				                                 Author
 # -------------------------------------------------------------------------
-# 1999SEP18 Created 3D axestype base class (this      JAW
+# 1999SEP18 Created 3D axestype base class (this                        JAW
 #           module) changes noted in comments.
-# 1999OCT15 Fixed to include all GIFgraph functions   JAW
+# 1999OCT15 Fixed to include all GIFgraph functions                     JAW
 #           necessary for PNG support.
-# 2000JAN19 Converted to GD::Graph sublcass           JAW
-# 2000FEB21 Fixed bug in y-labels' height             JAW
+# 2000JAN19 Converted to GD::Graph sublcass                             JAW
+# 2000FEB21 Fixed bug in y-labels' height                               JAW
+# 2000APR18 Updated for compatibility with GD::Graph 1.30               JAW
 #==========================================================================
 # TODO
 #		* Modify to use true 3-d extrusions at any theta and phi
@@ -29,7 +30,7 @@ use GD::Graph::utils qw(:all);
 use Carp;
 
 @GD::Graph::axestype3d::ISA = qw(GD::Graph::axestype);
-$GD::Graph::axestype3d::VERSION = '0.34';
+$GD::Graph::axestype3d::VERSION = '0.40';
 
 # Commented inheritance from GD::Graph::axestype unless otherwise noted.
 
@@ -49,11 +50,14 @@ sub initialise
 {
 	my $self = shift;
 
-	$self->SUPER::initialise();
+	my $rc = $self->SUPER::initialise();
 
-	while (my($key, $val) = each %Defaults) 
-		{ $self->{$key} = $val }
-}
+	while( my($key, $val) = each %Defaults ) { 
+		$self->{$key} = $val 
+	} # end while
+
+	return $rc;
+} # end initialise
 
 # PUBLIC
 # Inherit plot
@@ -70,197 +74,57 @@ sub initialise
 # PRIVATE
 
 # inherit check_data from GD::Graph
+# Inherit setup_boundaries
 
+# [JAW] Calls super, then add's 3d extrusion depth, adjusts 
+# coordinate and boundaris and rechecl boundary condtions
 sub setup_coords
 {
-	my $s = shift;
-	my $data = shift;
+	my $self = shift;
 
-	# Do some sanity checks
-	$s->{two_axes} = 0 if ( $s->{numsets} != 2 || $s->{two_axes} < 0 );
-	$s->{two_axes} = 1 if ( $s->{two_axes} > 1 );
+	$self->SUPER::setup_coords();
 
-	delete $s->{y_label2} unless ($s->{two_axes});
-
-	# Set some heights for text
-	$s->{tfh} = 0 unless $s->{title};
-	$s->{xlfh} = 0 unless $s->{x_label};
-
-	# Make sure the y1 axis has a label if there is one set for y in
-	# general
-	$s->{y1_label} = $s->{y_label} 
-		if ( ! $s->{y1_label} && $s->{y_label} );
-
-	# Set axis tick text heights and widths to 0 if they don't need to
-	# be plotted.
-	$s->{xafh} = 0, $s->{xafw} = 0 unless $s->{x_plot_values}; 
-	$s->{yafh} = 0, $s->{yafw} = 0 unless $s->{y_plot_values};
-
-	# Get the height of the space needed for the X axis tick text
-	$s->{x_axis_label_height} = $s->get_x_axis_label_height($data);
-
-	# CONTRIB Jeremy Wadsack
 	# Calculate the 3d-depth of the graph
 	# Note this sets a minimum depth of ~20 pixels
-	if (!defined $s->{x_tick_number}) {
-		my $depth = _max( $s->{bar_depth}, $s->{line_depth} );
-	   $s->{depth_3d} = _max( $depth, $s->{depth_3d} );
+	if (!defined $self->{x_tick_number}) {
+		my $depth = _max( $self->{bar_depth}, $self->{line_depth} );
+	   $self->{depth_3d} = _max( $depth, $self->{depth_3d} );
 	} # end if
 	
-	# calculate the top and bottom of the bounding box for the graph
-	$s->{bottom} = $s->{height} - $s->{b_margin} - 1 -
-		# X axis tick labels
-		( $s->{x_axis_label_height} ? $s->{x_axis_label_height} : 0) -
-		# X axis label
-		( $s->{xlfh} ? $s->{xlfh} + $s->{text_space} : 0 );
-
-	$s->{top} = $s->{t_margin} +
-				( $s->{tfh} ? $s->{tfh} + $s->{text_space} : 0 );
-	# Make sure the text for the y axis tick markers fits on the canvas
-	$s->{top} = $s->{yafh}/2 if ( $s->{top} == 0 );
-
-	# CONTRIB Jeremy Wadsack
 	# adjust for top of 3-d extrusion
-	$s->{top} += $s->{depth_3d};
+	$self->{top} += $self->{depth_3d};
 
-	$s->set_max_min($data);
-
-	# Create the labels for the y_axes, and calculate the max length
-
-	$s->create_y_labels();
-	$s->create_x_labels(); # CONTRIB Scott Prahl
-
-	# calculate the left and right of the bounding box for the graph
-	#my $ls = $s->{yafw} * $s->{y_label_len}[1];
-	my $ls = $s->{y_label_len}[1];
-	$s->{left} = $s->{l_margin} +
-				 # Space for tick values
-				 ( $ls ? $ls + $s->{axis_space} : 0 ) +
-				 # Space for the Y axis label
-				 ( $s->{y1_label} ? $s->{ylfh} + $s->{text_space} : 0 );
-
-	#$ls = $s->{yafw} * $s->{y_label_len}[2] if $s->{two_axes};
-	$ls = $s->{y_label_len}[2] if $s->{two_axes};
-	$s->{right} = $s->{width} - $s->{r_margin} - 1 -
-				  $s->{two_axes} * (
-					  ( $ls ? $ls + $s->{axis_space} : 0 ) +
-					  ( $s->{y2_label} ? $s->{ylfh} + $s->{text_space} : 0 )
-				  );
-
-	# CONTRIB Jeremy Wadsack
 	# adjust for right of 3-d extrusion
-	$s->{right} -= $s->{depth_3d};
+	$self->{right} -= $self->{depth_3d};
 
-	# CONTRIB Scott Prahl
-	# make sure that we can generate valid x tick marks
-	undef($s->{x_tick_number}) if $s->{numpoints} < 2;
-	undef($s->{x_tick_number}) if (
-			!defined $s->{x_max} || 
-			!defined $s->{x_min} ||
-			$s->{x_max} == $s->{x_min}
-		);
+	# recheck boundary conditions
+	return $self->_set_error('Horizontal size too small')	
+		if $self->{right} <= $self->{left};
 
-	# calculate the step size for x data
-	# CONTRIB Changes by Scott Prahl
-	if (defined $s->{x_tick_number})
-	{
-		my $delta = ($s->{right} - $s->{left})/($s->{x_max} - $s->{x_min});
-		$s->{x_offset} = 
-			($s->{true_x_min} - $s->{x_min}) * $delta + $s->{left};
-		$s->{x_step} = 
-			($s->{true_x_max} - $s->{true_x_min}) * $delta/$s->{numpoints};
-	}
-	else
-	{
-		$s->{x_step} = ($s->{right} - $s->{left})/($s->{numpoints} + 2);
-		$s->{x_offset} = $s->{left};
-	}
+	return $self->_set_error('Vertical size too small')
+		if $self->{bottom} <= $self->{top};
 
-	# get the zero axis level
-	my $dum;
-	($dum, $s->{zeropoint}) = $s->val_to_pixel(0, 0, 1);
-
-	# Check the size
-	croak "Vertical size too small"
-		if ( ($s->{bottom} - $s->{top}) <= 0 );
-
-	croak "Horizontal size too small"	
-		if ( ($s->{right} - $s->{left}) <= 0 );
-
-	# More sanity checks
-	$s->{x_label_skip} = 1 		if ( $s->{x_label_skip} < 1 );
-	$s->{y_label_skip} = 1 		if ( $s->{y_label_skip} < 1 );
-	$s->{y_tick_number} = 1		if ( $s->{y_tick_number} < 1 );
-}
+	return $self;
+	
+} # end setup_coords
 
 # Inherit create_y_labels
-# Inherit create_x_labels
 # Inherit get_x_axis_label_height
-
+# Inherit create_x_labels
 # inherit open_graph from GD::Graph
+# Inherit draw_text
 
-sub draw_text
-{
-	my $s = shift;
-
-	if ($s->{title})
-	{
-		my $xc = $s->{left} + ($s->{right} - $s->{left})/2;
-		$s->{gdta_title}->set_align('top', 'center');
-		$s->{gdta_title}->set_text($s->{title});
-		$s->{gdta_title}->draw($xc, $s->{t_margin});
-	}
-
-	# X label
-	if (defined $s->{x_label}) 
-	{
-		$s->{gdta_x_label}->set_text($s->{x_label});
-		$s->{gdta_x_label}->set_align('bottom', 'left');
-		my $tx = $s->{left} +
-			$s->{x_label_position} * ($s->{right} - $s->{left}) - 
-			$s->{x_label_position} * $s->{gdta_x_label}->get('width');
-		$s->{gdta_x_label}->draw($tx, $s->{height} - $s->{b_margin});
-	}
-
-	# Y labels
-	if (defined $s->{y1_label}) 
-	{
-		$s->{gdta_y_label}->set_text($s->{y1_label});
-		$s->{gdta_y_label}->set_align('top', 'left');
-		my $tx = $s->{l_margin};
-		my $ty = $s->{bottom} -
-			$s->{y_label_position} * ($s->{bottom} - $s->{top}) + 
-			$s->{y_label_position} * $s->{gdta_y_label}->get('width');
-		$s->{gdta_y_label}->draw($tx, $ty, PI/2);
-	}
-	if ( $s->{two_axes} && defined $s->{y2_label} ) 
-	{
-		$s->{gdta_y_label}->set_text($s->{y2_label});
-		$s->{gdta_y_label}->set_align('bottom', 'left');
-		my $tx = $s->{width} - $s->{r_margin};
-		my $ty = $s->{bottom} -
-			$s->{y_label_position} * ($s->{bottom} - $s->{top}) + 
-			$s->{y_label_position} * $s->{gdta_y_label}->get('width');
-		$s->{gdta_y_label}->draw($tx, $ty, PI/2);
-	}
-}
-
-#
-# CONTRIB Jeremy Wadsack
-# Added drawing for entire bounding cube for 3-d extrusion
-#
+# [JAW] Draws entire bounding cube for 3-d extrusion
 sub draw_axes
 {
 	my $s = shift;
-	my $d = shift;
 	my $g = $s->{graph};
 
 	my ($l, $r, $b, $t) = 
 		( $s->{left}, $s->{right}, $s->{bottom}, $s->{top} );
 	my $depth = $s->{depth_3d};
 
-	if ( $s->{box_axis} ) 
-	{
+	if ( $s->{box_axis} ) {
 		if( $s->{boxci} ) {
 			# Back box
 			$g->filledRectangle($l+$depth+1, $t-$depth+1, $r+$depth-1, $b-$depth-1, $s->{boxci});
@@ -301,9 +165,9 @@ sub draw_axes
 
 		# Axes box
 		$g->rectangle($l, $t, $r, $b, $s->{fgci});
-	}
-	else
-	{
+
+	} else {
+
 		# Y axis
 		my $poly = new GD::Polygon;
 		$poly->addPt( $l, $t );
@@ -331,10 +195,9 @@ sub draw_axes
 			$poly->addPt( $r + $depth, $b - $depth );
 			$g->polygon( $poly, $s->{fgci} );
 		} # end if
-	}
+	} # end if
 
-	if ($s->{zero_axis} or $s->{zero_axis_only})
-	{
+	if ($s->{zero_axis} or $s->{zero_axis_only})	{
 		my ($x, $y) = $s->val_to_pixel(0, 0, 1);
 		my $poly = new GD::Polygon;
 		$poly->addPt( $l, $y );
@@ -342,249 +205,314 @@ sub draw_axes
 		$poly->addPt( $r + $depth, $y - $depth );
 		$poly->addPt( $l + $depth, $y - $depth);
 		$g->polygon( $poly, $s->{fgci} );
-	}
-}
+	} # end if
+	
+} # end draw_exes
 
-#
-# Ticks and values for y axes
-#
-sub draw_y_ticks # \@data
+# [JAW] Draws ticks and values for y axes in 3d extrusion
+# Modified from MVERB source
+sub draw_y_ticks
 {
-	my $s = shift;
-	my $d = shift;
+	my $self = shift;
 
-	my $t;
-	foreach $t (0 .. $s->{y_tick_number}) 
+	for my $t (0 .. $self->{y_tick_number}) 
 	{
-		my $a;
-		foreach $a (1 .. ($s->{two_axes} + 1)) 
+		for my $a (1 .. ($self->{two_axes} + 1)) 
 		{
-			my $value = $s->{y_values}[$a][$t];
-			my $label = $s->{y_labels}[$a][$t];
+			my $value = $self->{y_values}[$a][$t];
+			my $label = $self->{y_labels}[$a][$t];
 			
-			my ($x, $y) = $s->val_to_pixel(0, $value, $a);
-			$x = ($a == 1) ? $s->{left} : $s->{right};
+			my ($x, $y) = $self->val_to_pixel(0, $value, $a);
+			$x = ($a == 1) ? $self->{left} : $self->{right};
 
 			# CONTRIB Jeremy Wadsack
 			# Draw on the back of the extrusion
-			$x += $s->{depth_3d};
-			$y -= $s->{depth_3d};
+			$x += $self->{depth_3d};
+			$y -= $self->{depth_3d};
 
-			if ($s->{y_long_ticks}) 
+			if ($self->{y_long_ticks}) 
 			{
-				$s->{graph}->line( 
+				$self->{graph}->line( 
 					$x, $y, 
-					$x + $s->{right} - $s->{left}, $y, 
-					$s->{fgci} 
+					$x + $self->{right} - $self->{left}, $y, 
+					$self->{fgci} 
 				) unless ($a-1);
 				# CONTRIB Jeremy Wadsack
 				# Draw conector ticks
-				$s->{graph}->line( 
-					$x - $s->{depth_3d}, $y + $s->{depth_3d},
-					$x, $y, 
-					$s->{fgci} 
+				$self->{graph}->line( $x - $self->{depth_3d}, 
+				                      $y + $self->{depth_3d},
+				                      $x, 
+				                      $y, 
+				                      $self->{fgci} 
 				) unless ($a-1);
 			} 
 			else 
 			{
-				$s->{graph}->line( 
+				$self->{graph}->line( 
 					$x, $y, 
-					$x + (3 - 2 * $a) * $s->{y_tick_length}, $y, 
-					$s->{fgci} 
+					$x + (3 - 2 * $a) * $self->{y_tick_length}, $y, 
+					$self->{fgci} 
 				);
 				# CONTRIB Jeremy Wadsack
 				# Draw conector ticks
-				$s->{graph}->line( 
-					$x - $s->{depth_3d}, $y + $s->{depth_3d},
-					$x - $s->{depth_3d} + (3 - 2 * $a) * $s->{y_tick_length}, $y + $s->{depth_3d} - (3 - 2 * $a) * $s->{y_tick_length},
-					$s->{fgci} 
+				$self->{graph}->line( $x - $self->{depth_3d}, 
+				                      $y + $self->{depth_3d},
+				                      $x - $self->{depth_3d} + (3 - 2 * $a) * $self->{y_tick_length}, 
+				                      $y + $self->{depth_3d} - (3 - 2 * $a) * $self->{y_tick_length},
+				                      $self->{fgci} 
 				);
 			}
 
 			next 
-				if ( $t % ($s->{y_label_skip}) || ! $s->{y_plot_values} );
+				if $t % ($self->{y_label_skip}) || ! $self->{y_plot_values};
 
-			$s->{gdta_y_axis}->set_text($label);
-			$s->{gdta_y_axis}->set_align('center', 
+			$self->{gdta_y_axis}->set_text($label);
+			$self->{gdta_y_axis}->set_align('center', 
 				$a == 1 ? 'right' : 'left');
-			$x -= (3 - 2 * $a) * $s->{axis_space};
+			$x -= (3 - 2 * $a) * $self->{axis_space};
+			
 			# CONTRIB Jeremy Wadsack
 			# Subtract 3-d extrusion width from left axis label
 			# (it was added for ticks)
-			$x -= (2 - $a) * $s->{depth_3d};
+			$x -= (2 - $a) * $self->{depth_3d};
 
 			# CONTRIB Jeremy Wadsack
 			# Add 3-d extrusion height to label
 			# (it was subtracted for ticks)
-			$y += $s->{depth_3d};
-			$s->{gdta_y_axis}->draw($x, $y);
-		}
-	}
-}
+			$y += $self->{depth_3d};
 
-#
-# Ticks and values for x axes
-#
-sub draw_x_ticks # \@data
+			$self->{gdta_y_axis}->draw($x, $y);
+			
+		} # end foreach
+	} # end foreach
+
+	return $self;
+
+} # end draw_y_ticks
+
+# [JAW] Darws ticks and values for x axes wih 3d extrusion
+# Modified from MVERB source
+sub draw_x_ticks
 {
-	my $s = shift;
-	my $d = shift;
+	my $self = shift;
 
-	my $i;
-	for $i (0 .. $s->{numpoints}) 
+	for (my $i = 0; $i < $self->{_data}->num_points; $i++) 
 	{
-		my ($x, $y) = $s->val_to_pixel($i + 1, 0, 1);
+		my ($x, $y) = $self->val_to_pixel($i + 1, 0, 1);
 
-		$y = $s->{bottom} unless $s->{zero_axis_only};
+		$y = $self->{bottom} unless $self->{zero_axis_only};
 
 		# CONTRIB  Damon Brodie for x_tick_offset
-		next if (!$s->{x_all_ticks} and 
-				($i - $s->{x_tick_offset}) % $s->{x_label_skip} and 
-				$i != $s->{numpoints} 
+		next if (!$self->{x_all_ticks} and 
+				($i - $self->{x_tick_offset}) % $self->{x_label_skip} and 
+				$i != $self->{_data}->num_points - 1 
 			);
 
 		# CONTRIB Jeremy Wadsack
 		# Draw on the back of the extrusion
-		$x += $s->{depth_3d};
-		$y -= $s->{depth_3d};
+		$x += $self->{depth_3d};
+		$y -= $self->{depth_3d};
 
-		if ($s->{x_ticks})
+		if ($self->{x_ticks})
 		{
-
-			if ($s->{x_long_ticks})
+			if ($self->{x_long_ticks})
 			{
 				# CONTRIB Jeremy Wadsack
 				# Move up by 3d depth
-				$s->{graph}->line($x, $s->{bottom} - $s->{depth_3d}, $x, $s->{top} - $s->{depth_3d},
-					$s->{fgci});
+				$self->{graph}->line( $x, 
+				                      $self->{bottom} - $self->{depth_3d}, 
+				                      $x, 
+				                      $self->{top} - $self->{depth_3d},
+				                      $self->{fgci});
 				# CONTRIB Jeremy Wadsack
 				# Draw conector ticks
-				$s->{graph}->line( 
-					$x - $s->{depth_3d}, $y + $s->{depth_3d},
-					$x, $y, 
-					$s->{fgci} 
+				$self->{graph}->line( $x - $self->{depth_3d}, 
+				                      $y + $self->{depth_3d},
+				                      $x, 
+				                      $y, 
+				                      $self->{fgci} 
 				);
 			}
 			else
 			{
-				$s->{graph}->line($x, $y, $x, $y - $s->{x_tick_length},
-					$s->{fgci});
+				$self->{graph}->line( $x, $y, $x, $y - $self->{x_tick_length}, $self->{fgci} );
 				# CONTRIB Jeremy Wadsack
 				# Draw conector ticks
-				$s->{graph}->line( 
-					$x - $s->{depth_3d}, $y + $s->{depth_3d},
-					$x - $s->{depth_3d} + $s->{x_tick_length}, $y + $s->{depth_3d} - $s->{x_tick_length},
-					$s->{fgci} 
+				$self->{graph}->line( $x - $self->{depth_3d}, 
+				                      $y + $self->{depth_3d},
+				                      $x - $self->{depth_3d} + $self->{x_tick_length}, 
+				                      $y + $self->{depth_3d} - $self->{x_tick_length},
+				                      $self->{fgci} 
 				);
 			}
 		}
 
 		# CONTRIB Damon Brodie for x_tick_offset
 		next if 
-			($i - $s->{x_tick_offset}) % ($s->{x_label_skip}) and 
-			$i != $s->{numpoints};
+			($i - $self->{x_tick_offset}) % ($self->{x_label_skip}) and 
+			$i != $self->{_data}->num_points - 1;
 
-		$s->{gdta_x_axis}->set_text($d->[0][$i]);
+		$self->{gdta_x_axis}->set_text($self->{_data}->get_x($i));
 
 		# CONTRIB Jeremy Wadsack
 		# Subtract 3-d extrusion width from left label
 		# Add 3-d extrusion height to left label
 		# (they were changed for ticks)
-		$x -= $s->{depth_3d};
-		$y += $s->{depth_3d};
+		$x -= $self->{depth_3d};
+		$y += $self->{depth_3d};
 
-		my $yt = $y + $s->{axis_space};
+		my $yt = $y + $self->{axis_space};
 
-		if ($s->{x_labels_vertical})
+		if ($self->{x_labels_vertical})
 		{
-			$s->{gdta_x_axis}->set_align('center', 'right');
-			$s->{gdta_x_axis}->draw($x, $yt, PI/2);
+			$self->{gdta_x_axis}->set_align('center', 'right');
+			$self->{gdta_x_axis}->draw($x, $yt, PI/2);
 		}
 		else
 		{
-			$s->{gdta_x_axis}->set_align('top', 'center');
-			$s->{gdta_x_axis}->draw($x, $yt);
+			$self->{gdta_x_axis}->set_align('top', 'center');
+			$self->{gdta_x_axis}->draw($x, $yt);
 		}
-	}
-}
+		
+	} # end for
+
+	return $self;
+
+} # end draw_x_ticks
 
 
 # CONTRIB Scott Prahl
 # Assume x array contains equally spaced x-values
 # and generate an appropriate axis
 #
-sub draw_x_ticks_number # \@data
+####
+# 'True' numerical X axis addition 
+# From: Gary Deschaines
+#
+# These modification to draw_x_ticks_number pass x-tick values to the
+# val_to_pixel subroutine instead of x-tick indices when ture[sic] numerical
+# x-axis mode is detected.  Also, x_tick_offset and x_label_skip are
+# processed differently when true numerical x-axis mode is detected to
+# allow labeled major x-tick marks and un-labeled minor x-tick marks.
+#
+# For example:
+#
+#      x_tick_number =>  14,
+#      x_ticks       =>   1,
+#      x_long_ticks  =>   1,
+#      x_tick_length =>  -4,
+#      x_min_value   => 100,
+#      x_max_value   => 800,
+#      x_tick_offset =>   2,
+#      x_label_skip  =>   2,
+#
+#
+#      ~         ~    ~    ~    ~    ~    ~    ~    ~    ~    ~    ~         ~
+#      |         |    |    |    |    |    |    |    |    |    |    |         |
+#   1 -|         |    |    |    |    |    |    |    |    |    |    |         |
+#      |         |    |    |    |    |    |    |    |    |    |    |         |
+#   0 _|_________|____|____|____|____|____|____|____|____|____|____|_________|
+#                |    |    |    |    |    |    |    |    |    |    |
+#               200       300       400       500       600       700
+####
+# [JAW] Added commented items for 3d rendering
+# Based on MVERB source
+sub draw_x_ticks_number
 {
-	my $s = shift;
-	my $d = shift;
+	my $self = shift;
 
-	my $i;
-	for $i (0 .. $s->{x_tick_number})
+	for my $i (0 .. $self->{x_tick_number})
 	{
-		my $value = $s->{numpoints}
-					* ($s->{x_values}[$i] - $s->{true_x_min})
-					/ ($s->{true_x_max} - $s->{true_x_min});
+		my ($value, $x, $y);
 
-		my $label = $s->{x_labels}[$i];
+ 		if (defined($self->{x_min_value}) && defined($self->{x_max_value}))
+ 		{
+			next if ($i - $self->{x_tick_offset}) < 0;
+ 			next if ($i + $self->{x_tick_offset}) > $self->{x_tick_number};
+ 			$value = $self->{x_values}[$i];
+ 			($x, $y) = $self->val_to_pixel($value, 0, 1);
+ 		}
+ 		else
+ 		{
+			$value = ($self->{_data}->num_points - 1)
+						* ($self->{x_values}[$i] - $self->{true_x_min})
+						/ ($self->{true_x_max} - $self->{true_x_min});
+ 			($x, $y) = $self->val_to_pixel($value + 1, 0, 1);
+ 		}
 
-		my ($x, $y) = $s->val_to_pixel($value + 1, 0, 1);
+		$y = $self->{bottom} unless $self->{zero_axis_only};
 
-		$y = $s->{bottom} unless $s->{zero_axis_only};
-
-		if ($s->{x_ticks})
+		if ($self->{x_ticks})
 		{
-			if ($s->{x_long_ticks})
+			if ($self->{x_long_ticks})
 			{
-				$s->{graph}->line($x, $s->{bottom}, 
-					$x, $s->{top},$s->{fgci});
+				# XXX This mod needs to be done everywhere ticks are
+				# drawn
+				if ( $self->{x_tick_length} >= 0 ) 
+				{
+					$self->{graph}->line($x, $self->{bottom}, 
+						$x, $self->{top}, $self->{fgci});
+				} 
+				else 
+				{
+					$self->{graph}->line(
+						$x, $self->{bottom} - $self->{x_tick_length}, 
+						$x, $self->{top}, $self->{fgci});
+				}
 				# CONTRIB Jeremy Wadsack
 				# Draw conector ticks
-				$s->{graph}->line( 
-					$x - $s->{depth_3d}, $y + $s->{depth_3d},
-					$x, $y, 
-					$s->{fgci} 
+				$self->{graph}->line( $x - $self->{depth_3d}, 
+				                      $y + $self->{depth_3d},
+				                      $x, 
+				                      $y, 
+				                      $self->{fgci} 
 				);
 			}
 			else
 			{
-				$s->{graph}->line( $x, $y, 
-					$x, $y - $s->{x_tick_length}, $s->{fgci} );
+				$self->{graph}->line($x, $y, 
+					$x, $y - $self->{x_tick_length}, $self->{fgci} );
 				# CONTRIB Jeremy Wadsack
 				# Draw conector ticks
-				$s->{graph}->line( 
-					$x - $s->{depth_3d}, $y + $s->{depth_3d},
-					$x - $s->{depth_3d} + $s->{tick_length}, $y + $s->{depth_3d} - $s->{tick_length},
-					$s->{fgci} 
+				$self->{graph}->line( $x - $self->{depth_3d}, 
+				                      $y + $self->{depth_3d},
+				                      $x - $self->{depth_3d} + $self->{tick_length}, 
+				                      $y + $self->{depth_3d} - $self->{tick_length},
+				                      $self->{fgci} 
 				);
-			}
-		}
+			} # end if -- x_long_ticks
+		} # end if -- x_ticks
 
-		next
-			if ( $i%($s->{x_label_skip}) and $i != $s->{x_tick_number} );
+		# If we have to skip labels, we'll do it here.
+		# Make sure to always draw the last one.
+		next if $i % $self->{x_label_skip} && $i != $self->{x_tick_number};
 
-		$s->{gdta_x_axis}->set_text($label);
+		$self->{gdta_x_axis}->set_text($self->{x_labels}[$i]);
 
 		# CONTRIB Jeremy Wadsack
 		# Subtract 3-d extrusion width from left label
 		# Add 3-d extrusion height to left label
 		# (they were changed for ticks)
-		$x -= $s->{depth_3d};
-		$y += $s->{depth_3d};
+		$x -= $self->{depth_3d};
+		$y += $self->{depth_3d};
 
-		if ($s->{x_labels_vertical})
+		if ($self->{x_labels_vertical})
 		{
-			$s->{gdta_x_axis}->set_align('center', 'right');
-			my $yt = $y + $s->{text_space}/2;
-			$s->{gdta_x_axis}->draw($x, $yt, PI/2);
+			$self->{gdta_x_axis}->set_align('center', 'right');
+			my $yt = $y + $self->{text_space}/2;
+			$self->{gdta_x_axis}->draw($x, $yt, PI/2);
 		}
 		else
 		{
-			$s->{gdta_x_axis}->set_align('top', 'center');
-			my $yt = $y + $s->{text_space}/2;
-			$s->{gdta_x_axis}->draw($x, $yt);
-		}
-	}
-}
+			$self->{gdta_x_axis}->set_align('top', 'center');
+			my $yt = $y + $self->{text_space}/2;
+			$self->{gdta_x_axis}->draw($x, $yt);
+		} # end if
+	} # end for
+
+	return $self;
+	
+} # end draw_x_tick_number
 
 # Inherit draw_ticks
 # Inherit draw_data
@@ -594,10 +522,10 @@ sub draw_x_ticks_number # \@data
 # Inherit get_min_y
 # Inherit get_max_min_y_all
 # Inherit _best_ends 
+# Inherit _get_bottom
 # Inherit val_to_pixel
 # Inherit setup_legend
 # Inherit draw_legend
 # Inherit draw_legend_marker
 
 1;
-

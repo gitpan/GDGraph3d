@@ -3,7 +3,7 @@ DESCRIPTION
     for the GD::Graph module by Martien Verbruggen, which in turn
     generates graph using Lincoln Stein's GD.pm.
 
-    You use these module just as you would any of the GD::Graph
+    You use these modules just as you would any of the GD::Graph
     modules, except that they generate 3d-looking graphs. Each graph
     type is described below with only the options that are unique to
     the 3d version. The modules are based on their 2d versions (e.g.
@@ -12,6 +12,7 @@ DESCRIPTION
     GD::Graph.
 
 CHANGES
+	0.40 Updated for compatibility with GD::Graph 1.30.
 	0.34 Fixed bar bottom rendering bug in bars3d module.
 	0.33 Fixed axes rendering bug in bars3d module.
 	0.32 Fixed rendering bug in bars3d module.
@@ -19,9 +20,8 @@ CHANGES
 	0.30 Initial CPAN Release.
 
 INSTALLATION
-    You will need to have the GD::Graph version 1.20 or later
-    (recommended 1.22 or later) installed. You should also have Perl
-    version 5.005.
+    You will need to have the GD::Graph version 1.30 or later
+    installed. You should also have Perl version 5.005 or 5.6.
 
     To install, just do the normal:
 
