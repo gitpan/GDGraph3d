@@ -31,7 +31,7 @@ use GD;
 use GD::Graph::axestype3d;
 
 @GD::Graph::lines3d::ISA = qw( GD::Graph::axestype3d );
-$GD::Graph::lines3d::VERSION = '0.41';
+$GD::Graph::lines3d::VERSION = '0.42';
 
 my %Defaults = (
 	# The depth of the line in their extrusion

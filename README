@@ -12,6 +12,10 @@ DESCRIPTION
     GD::Graph.
 
 CHANGES
+	0.42 Attempt to make CPAN index it better
+	0.41 Fixed axes rendering to maintain right side
+	     Fixed frame rendering so 'box' and 'no box' make more sense
+	     Set default color for text on pie chart slices to black
 	0.40 Updated for compatibility with GD::Graph 1.30.
 	0.34 Fixed bar bottom rendering bug in bars3d module.
 	0.33 Fixed axes rendering bug in bars3d module.

@@ -30,7 +30,7 @@ use GD::Graph::utils qw(:all);
 use Carp;
 
 @GD::Graph::axestype3d::ISA = qw(GD::Graph::axestype);
-$GD::Graph::axestype3d::VERSION = '0.40';
+$GD::Graph::axestype3d::VERSION = '0.42';
 
 # Commented inheritance from GD::Graph::axestype unless otherwise noted.
 

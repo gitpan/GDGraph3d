@@ -28,7 +28,7 @@ use GD::Graph::utils qw(:all);
 use GD::Graph::colour qw(:colours);
 
 @GD::Graph::bars3d::ISA = qw(GD::Graph::axestype3d);
-$GD::Graph::bars3d::VERSION = '0.41';
+$GD::Graph::bars3d::VERSION = '0.42';
 
 my %Defaults = (
 	# Spacing between the bars

@@ -1,3 +1,16 @@
+#==========================================================================
+# Module: GD::Graph3d
+#
+# Copyright (C) 2000 Wadsack-Allen. All Rights Reserved.
+#
+#--------------------------------------------------------------------------
+# Date      Modification                                             Author
+# -------------------------------------------------------------------------
+#==========================================================================
+package GD::Graph3d;
+
+1;
+
 =head1 NAME
 
 GD::Graph3D - Create 3D Graphs with GD and GD::Graph
@@ -83,7 +96,7 @@ width_of_chart / number_of_bars.
 
 =head1 VERSION
 
-0.40 (April 18, 2000)
+0.42 (July 07, 2000)
 
 =head1 INSTALLATION
 
@@ -125,3 +138,4 @@ This package is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
 =cut
+

@@ -2,6 +2,22 @@ Revision history for Perl extension GD-Graph3d.
 
 See individual files for file-specific changes.
 
+0.42 July 07 2000
+	- Attempt to make CPAN index it better
+0.41 April 24 2000
+	- Fixed axes rendering to maintain right side
+	- Fixed frame rendering so 'box' and 'no box' make more sense
+	- Set default color for text on pie chart slices to black
+0.40 Apr 18 2000
+	Updated for compatibility with GD::Graph 1.30.
+0.34 Mar 10 2000
+	- Fixed bar bottom rendering bug in bars3d module.
+0.33 Feb 21 2000
+	- Fixed axes rendering bug in bars3d module.
+0.32 Feb 11 2000
+	- Fixed rendering bug in bars3d module.
+0.31 Feb 07 2000
+	- Fixed bug in version data.
 0.30  Jan 19 2000
 	- Converted to GD::Graph subclasses.
 	- First CPAN release
