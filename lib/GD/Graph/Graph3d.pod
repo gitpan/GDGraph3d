@@ -81,6 +81,10 @@ width_of_chart / number_of_bars.
 
 =back
 
+=head1 VERSION
+
+0.34 (March 10, 2000)
+
 =head1 INSTALLATION
 
 You will need to have the GD::Graph version 1.20 or later (recommended 1.22 
@@ -121,4 +125,3 @@ This package is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
 =cut
-

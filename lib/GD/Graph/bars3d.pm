@@ -15,6 +15,7 @@
 # 1999SEP19 Implemented support for overwrite 2 style               JAW
 # 1999SEP19 Fixed a bug in color cycler (colors were off by 1)      JAW
 # 2000JAN19 Converted to GD::Graph class                            JAW
+# 2000MAR10 Fixed bug where bars ran off bottom of chart            JAW
 #==========================================================================
 package GD::Graph::bars3d;
 
@@ -25,7 +26,7 @@ use GD::Graph::utils qw(:all);
 use GD::Graph::colour qw(:colours);
 
 @GD::Graph::bars3d::ISA = qw(GD::Graph::axestype3d);
-$GD::Graph::bars3d::VERSION = '0.33';
+$GD::Graph::bars3d::VERSION = '0.34';
 
 my %Defaults = (
 	# Spacing between the bars
@@ -86,7 +87,7 @@ sub draw_data
 	my $i;
 	for $i (0 .. $s->{numpoints}) 
 	{
-		my $bottom = $zero;
+		my $bottom = _min( $zero, $s->{bottom} );
 		my ($xp, $t);
 		my $overwrite = 0;
 		$overwrite = $s->{overwrite} if defined $s->{overwrite};
