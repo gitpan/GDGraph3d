@@ -14,6 +14,7 @@
 # 1999OCT15 Fixed to include all GIFgraph functions   JAW
 #           necessary for PNG support.
 # 2000JAN19 Converted to GD::Graph sublcass           JAW
+# 2000FEB21 Fixed bug in y-labels' height             JAW
 #==========================================================================
 # TODO
 #		* Modify to use true 3-d extrusions at any theta and phi
@@ -28,7 +29,7 @@ use GD::Graph::utils qw(:all);
 use Carp;
 
 @GD::Graph::axestype3d::ISA = qw(GD::Graph::axestype);
-$GD::Graph::axestype3d::VERSION = '0.32';
+$GD::Graph::axestype3d::VERSION = '0.33';
 
 # Commented inheritance from GD::Graph::axestype unless otherwise noted.
 
@@ -408,14 +409,14 @@ sub draw_y_ticks # \@data
 				$a == 1 ? 'right' : 'left');
 			$x -= (3 - 2 * $a) * $s->{axis_space};
 			# CONTRIB Jeremy Wadsack
-			# Subtract 3-d extrusion width from left label
+			# Subtract 3-d extrusion width from left axis label
 			# (it was added for ticks)
 			$x -= (2 - $a) * $s->{depth_3d};
 
-			$y -= $s->{yafh}/2;
 			# CONTRIB Jeremy Wadsack
-			# Add 3-d extrusion height to left label
-			# (it was added for ticks)
+			# Add 3-d extrusion height to label
+			# (it was subtracted for ticks)
+			$y += $s->{depth_3d};
 			$s->{gdta_y_axis}->draw($x, $y);
 		}
 	}

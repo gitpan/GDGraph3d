@@ -25,7 +25,7 @@ use GD::Graph::utils qw(:all);
 use GD::Graph::colour qw(:colours);
 
 @GD::Graph::bars3d::ISA = qw(GD::Graph::axestype3d);
-$GD::Graph::bars3d::VERSION = '0.32';
+$GD::Graph::bars3d::VERSION = '0.33';
 
 my %Defaults = (
 	# Spacing between the bars
@@ -70,8 +70,8 @@ sub set
 
 
 # CONTRIB Jeremy Wadsack
-# This is a complete overhaul of the original GD::Graph
-# bars design, because all versions (overwrite = 0, 1, 2) 
+# This is a complete overhaul of the original GD::Graph::bars
+# design, because all versions (overwrite = 0, 1, 2) 
 # require that the bars be drawn in a loop of point over sets
 sub draw_data
 {

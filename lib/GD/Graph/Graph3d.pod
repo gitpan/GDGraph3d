@@ -103,7 +103,7 @@ Most of the modules are based on the GD::Graph modules by Martien Verbruggen.
 
 =head1 LATEST RELEASE
 
-The latest release is available from CPAN: http://www.cpan.org/authors/id/W/WA/WADG/.
+The latest release is available from CPAN: http://www.cpan.org/.
 
 =head1 COPYRIGHT
 
@@ -121,3 +121,4 @@ This package is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
 =cut
+
