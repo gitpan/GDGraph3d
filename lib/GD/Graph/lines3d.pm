@@ -1,7 +1,7 @@
 #==========================================================================
 # Module: GD::Graph::lines3d
 #
-# Copyright (C) 1999,2000 Wadsack-Allen. All Rights Reserved.
+# Copyright (C) 1999,2001 Wadsack-Allen. All Rights Reserved.
 #
 # Based on GD::Graph::lines.pm,v 1.10 2000/04/15 mgjv
 #          Copyright (c) 1995-1998 Martien Verbruggen
@@ -39,7 +39,7 @@ use GD::Graph::axestype3d;
 use Data::Dumper;
 
 @GD::Graph::lines3d::ISA = qw( GD::Graph::axestype3d );
-$GD::Graph::lines3d::VERSION = '0.55';
+$GD::Graph::lines3d::VERSION = '0.56';
 
 my $PI = 4 * atan2(1, 1);
 

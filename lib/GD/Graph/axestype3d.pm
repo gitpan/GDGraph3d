@@ -1,7 +1,7 @@
 #==========================================================================
 # Module: GD::Graph::axestype3d
 #
-# Copyright (C) 1999,2000 Wadsack-Allen. All Rights Reserved.
+# Copyright (C) 1999,2001 Wadsack-Allen. All Rights Reserved.
 #
 # Based on axestype.pm,v 1.21 2000/04/15 08:59:36 mgjv
 #          Copyright (c) 1995-1998 Martien Verbruggen
@@ -33,7 +33,7 @@ use GD::Graph::colour qw(:colours);
 use Carp;
 
 @GD::Graph::axestype3d::ISA = qw(GD::Graph::axestype);
-$GD::Graph::axestype3d::VERSION = '0.55';
+$GD::Graph::axestype3d::VERSION = '0.56';
 
 # Commented inheritance from GD::Graph::axestype unless otherwise noted.
 
@@ -253,7 +253,9 @@ sub draw_axes
 	my $depth = $s->{depth_3d};
 
 	if ( $s->{box_axis} ) {
+		# -- Draw a bounding box
 		if( $s->{boxci} ) {
+			# -- Fill the box with color
 			# Back box
 			$g->filledRectangle($l+$depth+1, $t-$depth+1, $r+$depth-1, $b-$depth-1, $s->{boxci});
 
@@ -282,6 +284,8 @@ sub draw_axes
 			} # end if
 		} # end if
 
+		# -- Draw the box frame
+		
 		# Back box
 		$g->rectangle($l+$depth, $t-$depth, $r+$depth, $b-$depth, $s->{fgci});
 		
@@ -291,11 +295,12 @@ sub draw_axes
 		$g->line($l, $b, $l + $depth, $b - $depth, $s->{fgci});
 		$g->line($r, $b, $r + $depth, $b - $depth, $s->{fgci});
 
-		# Axes box
+		# Front box
 		$g->rectangle($l, $t, $r, $b, $s->{fgci});
 
 	} else {
 		if( $s->{boxci} ) {
+			# -- Fill the background box with color
 			# Back box
 			$g->filledRectangle($l+$depth+1, $t-$depth+1, $r+$depth-1, $b-$depth-1, $s->{boxci});
 
@@ -323,7 +328,8 @@ sub draw_axes
 				$g->filledPolygon( $poly, $s->{boxci} );
 			} # end if
 		} # end if
-
+		# -- Draw the frame only for back & sides
+		
 		# Back box
 		$g->rectangle($l + $depth, $t - $depth, $r + $depth, $b - $depth, $s->{fgci});
 
@@ -356,6 +362,7 @@ sub draw_axes
 		} # end if
 	} # end if
 
+	# Zero axis
 	if ($s->{zero_axis} or $s->{zero_axis_only})	{
 		my ($x, $y) = $s->val_to_pixel(0, 0, 1);
 		my $poly = new GD::Polygon;

@@ -7,6 +7,8 @@ DESCRIPTION
     modules, except that they generate 3d-looking graphs.
 
 CHANGES
+	0.56 Added support for legends in pie3d
+	0.55 Allowed box_clr without box axis
 	0.54 Fixed a bug in MANIFEST
 	0.53 Added ability to render box_clr without box_axis
 	     Added a small segment to 'one point' line graphs

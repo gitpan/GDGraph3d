@@ -1,7 +1,7 @@
 #==========================================================================
 # Module: GD::Graph::bars3d
 #
-# Copyright (C) 1999,2000 Wadsack-Allen. All Rights Reserved.
+# Copyright (C) 1999,2001 Wadsack-Allen. All Rights Reserved.
 #
 # Based on GD::Graph::bars.pm,v 1.16 2000/03/18 10:58:39 mgjv
 #          Copyright (c) 1995-1998 Martien Verbruggen
@@ -30,7 +30,7 @@ use GD::Graph::utils qw(:all);
 use GD::Graph::colour qw(:colours);
 
 @GD::Graph::bars3d::ISA = qw(GD::Graph::axestype3d);
-$GD::Graph::bars3d::VERSION = '0.55';
+$GD::Graph::bars3d::VERSION = '0.56';
 
 my %Defaults = (
 	# Spacing between the bars
@@ -308,4 +308,3 @@ sub set_max_min {
 
 
 1;
-

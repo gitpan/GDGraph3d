@@ -8,7 +8,7 @@
 # -------------------------------------------------------------------------
 #==========================================================================
 package GD::Graph3d;
-$GD::Graph3d::VERSION = '0.55';
+$GD::Graph3d::VERSION = '0.56';
 1;
 
 =head1 NAME
@@ -18,16 +18,16 @@ GD::Graph3D - Create 3D Graphs with GD and GD::Graph
 =head1 SYNOPSIS
 
 	use GD::Graph::moduleName;
-	@data = ( 
+	my @data = ( 
 	   ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
 	   [ 1203,  3500,  3973,  2859,  3012,  3423,  1230]
 	);
+	my $graph = new GD::Graph::moduleName( 400, 300 );
 	$graph->set( 
 		x_label           => 'Day of the week',
 		y_label           => 'Number of hits',
 		title             => 'Daily Summary of Web Site',
 	);
-	$graph = GD::Graph::moduleName->new( 400, 300 );
 	my $gd = $graph->plot( \@data );
 
 Where I<moduleName> is one of C<bars3d>, C<lines3d> or C<pie3d>. 
@@ -78,7 +78,7 @@ each other, that is the series are stacked.
 
 By default this is set to '1' and will shade and highlight the bars (and axes).
 The light source is at top-left-center which scan well for most computer 
-users. You can disable the shading of bars and axes by specifiying a false 
+users. You can disable the shading of bars and axes by specifying a false 
 value for this option.
 
 =back
@@ -110,7 +110,7 @@ value for this option.
 
 =head1 VERSION
 
-0.54 (Septemnber 4, 2000)
+0.56 (August 9, 2001)
 
 =head1 INSTALLATION
 
@@ -138,7 +138,7 @@ The latest release is available from CPAN: http://www.cpan.org/.
 
 =head1 COPYRIGHT
 
-Copyright (c) 1999,2000 Wadsack-Allen. All rights reserved.
+Copyright (c) 1999,2001 Wadsack-Allen. All rights reserved.
 
 Much of the original code is from GD::Graph:
 
