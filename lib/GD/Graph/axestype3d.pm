@@ -17,6 +17,7 @@
 # 2000FEB21 Fixed bug in y-labels' height                               JAW
 # 2000APR18 Updated for compatibility with GD::Graph 1.30               JAW
 # 2000AUG21 Added 3d shading                                            JAW
+# 2000SEP04 Allowed box_clr without box axis                            JAW
 #==========================================================================
 # TODO
 #		* Modify to use true 3-d extrusions at any theta and phi
@@ -32,7 +33,7 @@ use GD::Graph::colour qw(:colours);
 use Carp;
 
 @GD::Graph::axestype3d::ISA = qw(GD::Graph::axestype);
-$GD::Graph::axestype3d::VERSION = '0.52';
+$GD::Graph::axestype3d::VERSION = '0.53';
 
 # Commented inheritance from GD::Graph::axestype unless otherwise noted.
 
@@ -294,6 +295,35 @@ sub draw_axes
 		$g->rectangle($l, $t, $r, $b, $s->{fgci});
 
 	} else {
+		if( $s->{boxci} ) {
+			# Back box
+			$g->filledRectangle($l+$depth+1, $t-$depth+1, $r+$depth-1, $b-$depth-1, $s->{boxci});
+
+			# Left side
+			my $poly = new GD::Polygon;
+			$poly->addPt( $l, $t );
+			$poly->addPt( $l + $depth, $t - $depth );
+			$poly->addPt( $l + $depth, $b - $depth );
+			$poly->addPt( $l, $b );
+			if( $s->{'3d_shading'} ) {
+				$g->filledPolygon( $poly, $s->{'3d_shadows'}[$s->{boxci}] );
+			} else {
+				$g->filledPolygon( $poly, $s->{boxci} );
+			} # end if
+
+			# Bottom
+			$poly = new GD::Polygon;
+			$poly->addPt( $l, $b );
+			$poly->addPt( $l + $depth, $b - $depth );
+			$poly->addPt( $r + $depth, $b - $depth );
+			$poly->addPt( $r, $b );
+			if( $s->{'3d_shading'} ) {
+				$g->filledPolygon( $poly, $s->{'3d_highlights'}[$s->{boxci}] );
+			} else {
+				$g->filledPolygon( $poly, $s->{boxci} );
+			} # end if
+		} # end if
+
 		# Back box
 		$g->rectangle($l + $depth, $t - $depth, $r + $depth, $b - $depth, $s->{fgci});
 

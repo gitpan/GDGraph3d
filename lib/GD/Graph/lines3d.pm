@@ -18,6 +18,7 @@
 # 2000AUG19 Changed render code so lines have consitent width           JAW
 # 2000AUG21 Added 3d shading                                            JAW
 # 2000AUG24 Fixed shading top/botttom vs. postive/negative slope        JAW
+# 2000SEP04 For single point "lines" made a short segment               JAW
 #==========================================================================
 # TODO
 #		** The new mitred corners don't work well at data anomlies. Like
@@ -37,7 +38,7 @@ use GD::Graph::axestype3d;
 use Data::Dumper;
 
 @GD::Graph::lines3d::ISA = qw( GD::Graph::axestype3d );
-$GD::Graph::lines3d::VERSION = '0.52';
+$GD::Graph::lines3d::VERSION = '0.53';
 
 my $PI = 4 * atan2(1, 1);
 
@@ -162,6 +163,11 @@ sub draw_data_overwrite {
 			my @values = $self->{_data}->y_values($j) or
 				return $self->_set_error( "Impossible illegal data set: $j", $self->{_data}->error );
 
+			if( $self->{_data}->num_points() == 1 && $i == 1 ) {
+				# Copy the first point to the "second" 
+				$values[$i] = $values[0];
+			} # end if
+
 			next unless defined $values[$i];
 
 			# calculate offset of this line
@@ -222,6 +228,14 @@ sub draw_data_overwrite {
 				$points_cache[$i + 1][$j] = { coords => [$xe, $ye] };
 			} # end if
 
+			if( $self->{_data}->num_points() == 1 && $i == 1 ) {
+				# Nudge the x coords back- and forwards
+				my $n = int(($self->{right} - $self->{left}) / 30);
+				$n = 2 if $n < 2;
+				$points_cache[$i][$j]{coords}[0] = $points_cache[$i - 1][$j]{coords}[0] + $n;
+				$points_cache[$i - 1][$j]{coords}[0] -= $n;
+			} # end if
+			
 			# Draw the line segment
 			$self->draw_line( $points_cache[$i - 1][$j], 
 			                  $points_cache[$i][$j], 
@@ -230,7 +244,7 @@ sub draw_data_overwrite {
 			                  $dsci );
 			
 			# Draw the end cap if last segment
-			if( $i == $self->{_data}->num_points() - 1 ) {
+			if( $i >= $self->{_data}->num_points() - 1 ) {
 				my $poly = new GD::Polygon;
 				$poly->addPt( $points_cache[$i][$j]{face}[0], $points_cache[$i][$j]{face}[1] );
 				$poly->addPt( $points_cache[$i][$j]{face}[2], $points_cache[$i][$j]{face}[3] );

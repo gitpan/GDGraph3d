@@ -7,6 +7,8 @@ DESCRIPTION
     modules, except that they generate 3d-looking graphs.
 
 CHANGES
+	0.53 Added ability to render box_clr without box_axis
+	     Added a small segment to 'one point' line graphs
 	0.52 Reorganized distribution to pacify CPAN
 	0.51 Fixed bugs in shading on bars and lines
 	0.50 Changed line rendering code so that lines have consistent width
