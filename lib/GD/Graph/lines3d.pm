@@ -37,7 +37,7 @@ use GD::Graph::axestype3d;
 use Data::Dumper;
 
 @GD::Graph::lines3d::ISA = qw( GD::Graph::axestype3d );
-$GD::Graph::lines3d::VERSION = '0.51';
+$GD::Graph::lines3d::VERSION = '0.52';
 
 my $PI = 4 * atan2(1, 1);
 

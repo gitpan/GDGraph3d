@@ -2,6 +2,8 @@ Revision history for Perl extension GD-Graph3d.
 
 See individual files for file-specific changes.
 
+0.52 Aug 29 2000
+	- Reorganized distribution to pacify CPAN. No change to code.
 0.51 Aug 23 2000
 	- Fixed bug in shading with cycle_clrs on
 	- Fixed bug in shading on lines of positive or negative slope
