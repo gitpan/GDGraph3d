@@ -12,6 +12,7 @@ DESCRIPTION
     GD::Graph.
 
 CHANGES
+	0.32 Fixed rendering bug in bars3d module.
 	0.31 Fixed bug in version data.
 	0.30 Initial CPAN Release.
 

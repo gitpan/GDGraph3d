@@ -25,6 +25,7 @@ use GD::Graph::utils qw(:all);
 use GD::Graph::colour qw(:colours);
 
 @GD::Graph::bars3d::ISA = qw(GD::Graph::axestype3d);
+$GD::Graph::bars3d::VERSION = '0.32';
 
 my %Defaults = (
 	# Spacing between the bars
@@ -177,7 +178,14 @@ sub draw_data
 			$s->{right}+$s->{depth_3d}, $s->{zeropoint}-$s->{depth_3d}, 
 			$s->{fgci} );
 	} # end if
-}
+
+	# redraw the box face
+	if ( $s->{box_axis} ) {
+		# Axes box
+		$g->rectangle($s->{left}, $s->{top}, $s->{right}, $s->{bottom}, $s->{fgci});
+	} # end if
+
+} # end draw_data
 
 # CONTRIB Jeremy Wadsack
 # This function draws a bar at the given 

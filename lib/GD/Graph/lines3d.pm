@@ -29,6 +29,7 @@ use GD;
 use GD::Graph::axestype3d;
 
 @GD::Graph::lines3d::ISA = qw( GD::Graph::axestype3d );
+$GD::Graph::lines3d::VERSION = '0.32';
 
 my %Defaults = (
 	# The depth of the line in their extrusion
@@ -102,10 +103,10 @@ sub draw_data # GD::Image, \@data
 	if ( $s->{box_axis} ) {
 		# Axes box
 		$g->rectangle($s->{left}, $s->{top}, $s->{right}, $s->{bottom}, $s->{fgci});
-	}
+	} # end if
 	
 
-}
+} # end draw_data
 
 sub pick_line_type
 {
