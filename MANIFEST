@@ -1,0 +1,10 @@
+lib/GD/Graph/axestype3d.pm
+lib/GD/Graph/bars3d.pm
+Changes
+lib/GD/Graph/Graph3d.pod
+lib/GD/Graph/lines3d.pm
+Makefile.PL
+MANIFEST
+README
+lib/GD/Graph/pie3d.pm
+test.pl

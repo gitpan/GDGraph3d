@@ -1,0 +1,14 @@
+Revision history for Perl extension GD-Graph3d.
+
+See individual files for file-specific changes.
+
+0.30  Jan 19 2000
+	- Converted to GD::Graph subclasses.
+	- First CPAN release
+0.20  Oct 15 2000
+	- Modified all files to support GD with PNG output.
+0.10  Sep 15 2000
+	- Original version. Based on GIFgraph.
+
+
+
