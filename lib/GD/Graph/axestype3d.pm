@@ -16,6 +16,7 @@
 # 2000JAN19 Converted to GD::Graph sublcass                             JAW
 # 2000FEB21 Fixed bug in y-labels' height                               JAW
 # 2000APR18 Updated for compatibility with GD::Graph 1.30               JAW
+# 2000AUG21 Added 3d shading                                            JAW
 #==========================================================================
 # TODO
 #		* Modify to use true 3-d extrusions at any theta and phi
@@ -27,18 +28,21 @@ use strict;
 use GD::Graph;
 use GD::Graph::axestype;
 use GD::Graph::utils qw(:all);
+use GD::Graph::colour qw(:colours);
 use Carp;
 
 @GD::Graph::axestype3d::ISA = qw(GD::Graph::axestype);
-$GD::Graph::axestype3d::VERSION = '0.42';
+$GD::Graph::axestype3d::VERSION = '0.40';
 
 # Commented inheritance from GD::Graph::axestype unless otherwise noted.
 
 use constant PI => 4 * atan2(1,1);
 
 my %Defaults = (
-	# Only default here is depth_3d, rest inherited
-	depth_3d					=> 20,
+	depth_3d           => 20,
+	'3d_shading'       => 1,
+
+	# the rest are inherited
 );
 
 # Inherit _has_default 
@@ -71,7 +75,121 @@ sub initialise
 # Inherit set_legend_font
 
 
+
+# ----------------------------------------------------------
+# Sub: init_graph
+#
+# Args: (None)
+#
+# Description: 
+# Override GD::Graph::init_graph to add 3d shading colors, 
+# if requested
+#
+# [From GD::Graph]
+# Initialise the graph output canvas, setting colours (and 
+# getting back index numbers for them) setting the graph to 
+# transparent, and interlaced, putting a logo (if defined) 
+# on there.
+# ----------------------------------------------------------
+# Date      Modification                              Author
+# ----------------------------------------------------------
+# 20Aug2000 Added to support 3d graph extensions          JW
+# ----------------------------------------------------------
+sub init_graph {
+	my $self = shift;
+
+	# Sets up the canvas and color palette
+	$self->SUPER::init_graph( @_ );	
+
+	# Now create highlights and showdows for each color
+	# in the palette
+	if( $self->{'3d_shading'} ) {
+		$self->{'3d_highlights'} = [];
+		$self->{'3d_shadows'} = [];
+		$self->{'3d_highlights'}[$self->{bgci}] = $self->set_clr( $self->_brighten( _rgb($self->{bgclr}) ) );
+		$self->{'3d_shadows'}[$self->{bgci}]    = $self->set_clr( $self->_darken( _rgb($self->{bgclr}) ) );
+
+		$self->{'3d_highlights'}[$self->{fgci}] = $self->set_clr( $self->_brighten( _rgb($self->{fgclr}) ) );
+		$self->{'3d_shadows'}[$self->{fgci}]    = $self->set_clr( $self->_darken( _rgb($self->{fgclr}) ) );
+
+		$self->{'3d_highlights'}[$self->{tci}] = $self->set_clr( $self->_brighten( _rgb($self->{textclr}) ) );
+		$self->{'3d_shadows'}[$self->{tci}]    = $self->set_clr( $self->_darken( _rgb($self->{textclr}) ) );
+
+		$self->{'3d_highlights'}[$self->{lci}] = $self->set_clr( $self->_brighten( _rgb($self->{labelclr}) ) );
+		$self->{'3d_shadows'}[$self->{lci}]    = $self->set_clr( $self->_darken( _rgb($self->{labelclr}) ) );
+
+		$self->{'3d_highlights'}[$self->{alci}] = $self->set_clr( $self->_brighten( _rgb($self->{axislabelclr}) ) );
+		$self->{'3d_shadows'}[$self->{alci}]    = $self->set_clr( $self->_darken( _rgb($self->{axislabelclr}) ) );
+
+		$self->{'3d_highlights'}[$self->{acci}] = $self->set_clr( $self->_brighten( _rgb($self->{accentclr}) ) );
+		$self->{'3d_shadows'}[$self->{acci}]    = $self->set_clr( $self->_darken( _rgb($self->{accentclr}) ) );
+
+		$self->{'3d_highlights'}[$self->{valuesci}] = $self->set_clr( $self->_brighten( _rgb($self->{valuesclr}) ) );
+		$self->{'3d_shadows'}[$self->{valuesci}]    = $self->set_clr( $self->_darken( _rgb($self->{valuesclr}) ) );
+
+		$self->{'3d_highlights'}[$self->{legendci}] = $self->set_clr( $self->_brighten( _rgb($self->{legendclr}) ) );
+		$self->{'3d_shadows'}[$self->{legendci}]    = $self->set_clr( $self->_darken( _rgb($self->{legendclr}) ) );
+
+		if( $self->{boxclr} ) {
+			$self->{'3d_highlights'}[$self->{boxci}] = $self->set_clr( $self->_brighten( _rgb($self->{boxclr}) ) );
+			$self->{'3d_shadows'}[$self->{boxci}]    = $self->set_clr( $self->_darken( _rgb($self->{boxclr}) ) );
+		} # end if
+	} # end if
+
+	return $self;
+} # end init_graph
+
+
 # PRIVATE
+
+# ----------------------------------------------------------
+# Sub: _brighten
+#
+# Args: $r, $g, $b
+#	$r, $g, $b	The Red, Green, and Blue components of a color
+#
+# Description: Brightens the color by adding white
+# ----------------------------------------------------------
+# Date      Modification                              Author
+# ----------------------------------------------------------
+# 21AUG2000 Created to build 3d highlights table          JW
+# ----------------------------------------------------------
+sub _brighten {
+	my $self = shift;
+	my( $r, $g, $b ) = @_;
+	my $p = ($r + $g + $b) / 70;
+	$p = 3 if $p < 3;
+	my $f = _max( $r / $p, _max( $g / $p, $b / $p ) );
+	$r = _min( 255, int( $r + $f ) );
+	$g = _min( 255, int( $g + $f ) );
+	$b = _min( 255, int( $b + $f ) );
+	return( $r, $g, $b );
+} # end _brighten
+
+# ----------------------------------------------------------
+# Sub: _darken
+#
+# Args: $r, $g, $b
+#	$r, $g, $b	The Red, Green, and Blue components of a color
+#
+# Description: Darkens the color by adding black
+# ----------------------------------------------------------
+# Date      Modification                              Author
+# ----------------------------------------------------------
+# 21AUG2000 Created to build 3d shadows table          JW
+# ----------------------------------------------------------
+sub _darken {
+	my $self = shift;
+	my( $r, $g, $b ) = @_;
+	my $p = ($r + $g + $b) / 70;
+	$p = 3 if $p < 3;
+	my $f = _max( $r / $p, _max( $g / $p, $b / $p) );
+	$r = _max( 0, int( $r - $f ) );
+	$g = _max( 0, int( $g - $f ) );
+	$b = _max( 0, int( $b - $f ) );
+	return( $r, $g, $b );
+} # end _darken
+
 
 # inherit check_data from GD::Graph
 
@@ -144,15 +262,11 @@ sub draw_axes
 			$poly->addPt( $l + $depth, $t - $depth );
 			$poly->addPt( $l + $depth, $b - $depth );
 			$poly->addPt( $l, $b );
-			$g->filledPolygon( $poly, $s->{boxci} );
-
-			# Right side
-			$poly = new GD::Polygon;
-			$poly->addPt( $r, $t );
-			$poly->addPt( $r + $depth, $t - $depth );
-			$poly->addPt( $r + $depth, $b - $depth );
-			$poly->addPt( $r, $b );
-			$g->filledPolygon( $poly, $s->{boxci} );
+			if( $s->{'3d_shading'} ) {
+				$g->filledPolygon( $poly, $s->{'3d_shadows'}[$s->{boxci}] );
+			} else {
+				$g->filledPolygon( $poly, $s->{boxci} );
+			} # end if
 
 			# Bottom
 			$poly = new GD::Polygon;
@@ -160,7 +274,11 @@ sub draw_axes
 			$poly->addPt( $l + $depth, $b - $depth );
 			$poly->addPt( $r + $depth, $b - $depth );
 			$poly->addPt( $r, $b );
-			$g->filledPolygon( $poly, $s->{boxci} );
+			if( $s->{'3d_shading'} ) {
+				$g->filledPolygon( $poly, $s->{'3d_highlights'}[$s->{boxci}] );
+			} else {
+				$g->filledPolygon( $poly, $s->{boxci} );
+			} # end if
 		} # end if
 
 		# Back box

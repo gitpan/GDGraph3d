@@ -8,7 +8,7 @@
 # -------------------------------------------------------------------------
 #==========================================================================
 package GD::Graph3d;
-
+$GD::Graph3d::VERSION = '0.50';
 1;
 
 =head1 NAME
@@ -30,11 +30,11 @@ GD::Graph3D - Create 3D Graphs with GD and GD::Graph
 	$graph = GD::Graph::moduleName->new( 400, 300 );
 	my $gd = $graph->plot( \@data );
 
-Where I<moduleName> is one of bars3d, lines3d or pie3d. 
+Where I<moduleName> is one of C<bars3d>, C<lines3d> or C<pie3d>. 
 
 =head1 DESCRIPTION
 
-This is the GDGraph3d extensions module. It provides 3D graphs for the 
+This is the GD::Graph3d extensions module. It provides 3D graphs for the 
 GD::Graph module by Martien Verbruggen, which in turn generates graph 
 using Lincoln Stein's GD.pm.
 
@@ -74,6 +74,13 @@ You can set overwrite to 1 to tell it to draw each series behind the
 previous one. By setting overwrite to 2 you can have them drawn on top of 
 each other, that is the series are stacked.
 
+=item shading
+
+By default this is set to '1' and will shade and highlight the bars (and axes).
+The light source is at top-left-center which scan well for most computer 
+users. You can disable the shading of bars and axes by specifiying a false 
+value for this option.
+
 =back
 
 =item GD::Graph::lines3d
@@ -90,13 +97,20 @@ large number of bars or a small chart width, you may want to change this.
 A visually good value for this is approximately 
 width_of_chart / number_of_bars.
 
+=item shading
+
+By default this is set to '1' and will shade and highlight the line (and axes).
+The light source is at top-left-center which scan well for most computer 
+users. You can disable the shading of lines and axes by specifiying a false 
+value for this option.
+
 =back
 
 =back
 
 =head1 VERSION
 
-0.42 (July 07, 2000)
+0.50 (August 21, 2000)
 
 =head1 INSTALLATION
 
@@ -138,4 +152,3 @@ This package is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
 =cut
-

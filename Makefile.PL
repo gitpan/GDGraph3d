@@ -2,9 +2,9 @@ use ExtUtils::MakeMaker;
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
 WriteMakefile(
-	'NAME'	=> 'GD::Graph',
+	'NAME'	=> 'GD::Graph3d',
 	'VERSION_FROM' => 'lib/GD/Graph/axestype3d.pm', # finds $VERSION
-	'DISTNAME' => 'GD-Graph3d',
+	'DISTNAME' => 'GDGraph3d',
 
 	($] >= 5.005 ?
 		('ABSTRACT'		=> 'Creates 3D charts with GD::Graph and GD.',
@@ -14,6 +14,7 @@ WriteMakefile(
 
 	'PREREQ_PM'			=> { 
 	'GD' => '1.18', 
+	'GD::Graph' => '1.30',
 	'GD::Text::Align' => undef,
 	},
 

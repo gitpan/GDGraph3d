@@ -18,6 +18,7 @@
 # 2000MAR10 Fixed bug where bars ran off bottom of chart                JAW
 # 2000APR18 Modified to be compatible with GD::Graph 1.30               JAW
 # 2000APR24 Fixed a lot of rendering bugs and added shading             JAW
+# 2000AUG21 Added 3d shading                                            JAW
 #==========================================================================
 package GD::Graph::bars3d;
 
@@ -28,7 +29,7 @@ use GD::Graph::utils qw(:all);
 use GD::Graph::colour qw(:colours);
 
 @GD::Graph::bars3d::ISA = qw(GD::Graph::axestype3d);
-$GD::Graph::bars3d::VERSION = '0.42';
+$GD::Graph::bars3d::VERSION = '0.41';
 
 my %Defaults = (
 	# Spacing between the bars
@@ -101,8 +102,13 @@ sub draw_data
 				$value = $self->{_data}->get_y_cumulative($j, $i)
 				if ($self->{cumulate});
 
-			# Pick a data colour
-			my $dsci = $self->set_clr($self->pick_data_clr($j));
+			# Pick a data colour, calc shading colors too, if requested
+			my( @rgb ) = $self->pick_data_clr( $j );
+			my $dsci = $self->set_clr( @rgb );
+			if( $self->{'3d_shading'} ) {
+				$self->{'3d_highlights'}[$dsci] = $self->set_clr( $self->_brighten( @rgb ) );
+				$self->{'3d_shadows'}[$dsci]    = $self->set_clr( $self->_darken( @rgb ) );
+			} # end if
 
 			# contrib "Bremford, Mike" <mike.bremford@gs.com>
 			my $brci = $self->set_clr($self->pick_border_clr($j));
@@ -245,7 +251,11 @@ sub draw_bar {
 	$poly->addPt( $r+$depth, $t-$depth );
 	$poly->addPt( $r+$depth, $b-$depth );
 	$poly->addPt( $r, $b );
-	$g->filledPolygon( $poly, $dsci );
+	if( $self->{'3d_shading'} ) {
+		$g->filledPolygon( $poly, $self->{'3d_shadows'}[$dsci] );
+	} else {
+		$g->filledPolygon( $poly, $dsci );
+	} # end if
 	$g->polygon( $poly, $brci );
 
 	# top
@@ -256,7 +266,11 @@ sub draw_bar {
 		$poly->addPt( $l+$depth, $t-$depth );
 		$poly->addPt( $r+$depth, $t-$depth );
 		$poly->addPt( $r, $t );
-		$g->filledPolygon( $poly, $dsci );
+		if( $self->{'3d_shading'} ) {
+			$g->filledPolygon( $poly, $self->{'3d_highlights'}[$dsci] );
+		} else {
+			$g->filledPolygon( $poly, $dsci );
+		} # end if
 		$g->polygon( $poly, $brci );
 	} # end if
 

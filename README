@@ -1,17 +1,14 @@
 DESCRIPTION
-    This is the GD-Graph3d extensions module. It provides 3D graphs
+    This is the GD::Graph3d extensions module. It provides 3D graphs
     for the GD::Graph module by Martien Verbruggen, which in turn
     generates graph using Lincoln Stein's GD.pm.
 
     You use these modules just as you would any of the GD::Graph
-    modules, except that they generate 3d-looking graphs. Each graph
-    type is described below with only the options that are unique to
-    the 3d version. The modules are based on their 2d versions (e.g.
-    GD::Graph::bars3d works like GD::Graph::bars), and support all
-    the options in those. Make sure to read the documentation on
-    GD::Graph.
+    modules, except that they generate 3d-looking graphs.
 
 CHANGES
+	0.50 Changed line rendering code so that lines have consistent width
+	     Added shading to the bar and line charts and to the axes
 	0.42 Attempt to make CPAN index it better
 	0.41 Fixed axes rendering to maintain right side
 	     Fixed frame rendering so 'box' and 'no box' make more sense
@@ -25,7 +22,8 @@ CHANGES
 
 INSTALLATION
     You will need to have the GD::Graph version 1.30 or later
-    installed. You should also have Perl version 5.005 or 5.6.
+    installed (and all its prerequisites). You should also have 
+    Perl version 5.005 or 5.6.
 
     To install, just do the normal:
 
@@ -33,7 +31,8 @@ INSTALLATION
             make
             make install
 
-    The documentation is in GD::Graph::Graph3d.pod.
+    The documentation is in GD::Graph3d.pm. Try 'perldoc GD::Graph3d' 
+    after installation.
 
 AUTHOR
     Jeremy Wadsack for Wadsack-Allen Digital Group.

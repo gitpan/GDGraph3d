@@ -23,11 +23,11 @@ use GD::Graph::pie;
 use Carp;
 
 @GD::Graph::pie3d::ISA = qw( GD::Graph::pie );
-$GD::Graph::pie3d::VERSION = '0.42';
+$GD::Graph::pie3d::VERSION = '0.50';
 
 my %Defaults = (
 	'3d'         => 1,
-	axislabelclr => 'black',	# values on slices. black because defaults colors use dblue
+	axislabelclr => 'black',	# values on slices. black because default colors use dblue
 );
 
 sub initialise {

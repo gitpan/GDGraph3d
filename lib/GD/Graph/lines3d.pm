@@ -15,13 +15,17 @@
 # 2000SEP19 Converted to a GD::Graph class                              JAW
 # 2000APR18 Modified for compatibility with GD::Graph 1.30              JAW
 # 2000APR24 Fixed a lot of rendering bugs                               JAW
+# 2000AUG19 Changed render code so lines have consitent width           JAW
+# 2000AUG21 Added 3d shading                                            JAW
 #==========================================================================
 # TODO
+#		* Add shading to the top/bottom polygon (if desired) so that 
+#		  top polygon is brighter and bottom is darker than specifed color
 #		* Write a draw_data_set that draws the line so they appear to pass 
 #		  through one another. This means drawing a border edge at each 
-#		  intersection of the data lines so the points of pass through show.
-#		  Probably want to draw all polygons, then run through the data again 
-#		  finding intersections of line segments and drawing those edges.
+#		  intersection of the data lines so the points of pass-through show.
+#		  Probably want to draw all filled polygons, then run through the data 
+#		  again finding intersections of line segments and drawing those edges.
 #==========================================================================
 package GD::Graph::lines3d;
 
@@ -29,9 +33,12 @@ use strict;
  
 use GD;
 use GD::Graph::axestype3d;
+use Data::Dumper;
 
 @GD::Graph::lines3d::ISA = qw( GD::Graph::axestype3d );
-$GD::Graph::lines3d::VERSION = '0.42';
+$GD::Graph::lines3d::VERSION = '0.50';
+
+my $PI = 4 * atan2(1, 1);
 
 my %Defaults = (
 	# The depth of the line in their extrusion
@@ -53,7 +60,7 @@ sub initialise()
 		# line_depth, numsets and overwrite parameters, here?
 		#
 	} # end while
-	
+
 	return $rc;
 	
 } # end initialize
@@ -126,23 +133,33 @@ sub pick_line_type
 		$num % 4 ? $num % 4 : 4
 }
 
-# CONTRIB Jeremy Wadsack
-# Added this for overwrite support. Later can 
-# do non-overwrite support
+# ----------------------------------------------------------
+# Sub: draw_data_overwrite
+#
+# Args: $gd
+#	$gd	The GD object to draw on
+#
+# Description: Draws each line segment for each set. Runs 
+# over sets, then points so that the appearance is better.
+# ----------------------------------------------------------
+# Date      Modification                              Author
+# ----------------------------------------------------------
+# 19SEP1999 Added this for overwrite support.             JW
+# 20AUG2000 Changed structure to use points 'objects'     JW
+# ----------------------------------------------------------
 sub draw_data_overwrite {
 	my $self = shift;
 	my $g = shift;
-	my $d = shift;
+	my @points_cache;
 
 	my $i;
-	for $i (1 .. $self->{_data}->num_points()) 
+	for $i (0 .. $self->{_data}->num_points()) 
 	{
 		my $j;
 		for $j (1 .. $self->{_data}->num_sets()) 
 		{
 			my @values = $self->{_data}->y_values($j) or
-				return $self->_set_error("Impossible illegal data set: $j",
-					$self->{_data}->error);
+				return $self->_set_error( "Impossible illegal data set: $j", $self->{_data}->error );
 
 			next unless defined $values[$i];
 
@@ -152,72 +169,122 @@ sub draw_data_overwrite {
 			#
 			my $offset = $self->{line_depth} * ($self->{_data}->num_sets() - $j);
 
-			# get the color and type
-			my $dsci = $self->set_clr( $self->pick_data_clr($j) );
-			my $type = $self->pick_line_type($j);
-			
-			# get the coordinates
-			my ($xb, $yb) = (undef, undef);
-			if (defined $values[$i - 1])
-			{
-				if (defined($self->{x_min_value}) && defined($self->{x_max_value}))
-				{
-					($xb, $yb) =
-						$self->val_to_pixel($self->{_data}->get_x($i - 1), $values[$i - 1], $j);
-				}
-				else	
-				{
-					($xb, $yb) = $self->val_to_pixel($i, $values[$i - 1], $j);
-				}
-			}
-
-			if( defined $xb ) {
+			# Get the coordinates of the previous point, if this is the first 
+			# point make a point object and start over (i.e. next;)
+			unless( $i ) {
+				my( $xb, $yb );
+				if (defined($self->{x_min_value}) && defined($self->{x_max_value})) {
+					($xb, $yb) = $self->val_to_pixel( $self->{_data}->get_x($i), $values[$i], $j );
+				} else {
+					($xb, $yb) = $self->val_to_pixel( $i + 1, $values[$i], $j );
+				} # end if
 				$xb += $offset;
 				$yb -= $offset;
+				$points_cache[$i][$j] = { coords => [$xb, $yb] };
+				next;
+			} # end unless
 
-				my ($xe, $ye);
-				
-				if (defined($self->{x_min_value}) && defined($self->{x_max_value}))
-				{
-					($xe, $ye) = $self->val_to_pixel(
-						$self->{_data}->get_x($i), $values[$i], $j);
-				}
-				else
-				{
-					($xe, $ye) = $self->val_to_pixel($i+1, $values[$i], $j);
-				}
+			# Pick a data colour, calc shading colors too, if requested
+			my( @rgb ) = $self->pick_data_clr( $j );
+			my $dsci = $self->set_clr( @rgb );
+			if( $self->{'3d_shading'} ) {
+				$self->{'3d_highlights'}[$dsci] = $self->set_clr( $self->_brighten( @rgb ) );
+				$self->{'3d_shadows'}[$dsci]    = $self->set_clr( $self->_darken( @rgb ) );
+			} # end if
+
+			# Get the type
+			my $type = $self->pick_line_type($j);
+			
+			# Get the coordinates of the this point
+			unless( ref $points_cache[$i][$j] ) {
+				my( $xe, $ye );
+				if( defined($self->{x_min_value}) && defined($self->{x_max_value}) ) {
+					( $xe, $ye ) = $self->val_to_pixel( $self->{_data}->get_x($i), $values[$i], $j );
+				} else {
+					( $xe, $ye ) = $self->val_to_pixel($i + 1, $values[$i], $j);
+				} # end if
 				$xe += $offset;
 				$ye -= $offset;
-
-				# draw the line segment
-				$self->draw_line( $xb, $yb, $xe, $ye, $type, $dsci ) 
-					if defined $xb;
-				
-				# draw the end caps
-				if( $i == $self->{_data}->num_points() - 1 ) {
-					my $poly = new GD::Polygon;
-					my $lwh = $self->{line_width} / 2;
-					$poly->addPt( $xe, $ye - $lwh );
-					$poly->addPt( $xe, $ye + $lwh );
-					$poly->addPt( $xe + $self->{line_depth}, $ye + $lwh - $self->{line_depth} );
-					$poly->addPt( $xe + $self->{line_depth}, $ye - $lwh - $self->{line_depth} );
-					$g->filledPolygon( $poly, $dsci );
-					$g->polygon( $poly, $self->{fgci} );
-				} # end if
-
+				$points_cache[$i][$j] = { coords => [$xe, $ye] };
 			} # end if
+			
+			# Find the coordinates of the next point
+			if( defined $values[$i + 1] ) {
+				my( $xe, $ye );
+				if( defined($self->{x_min_value}) && defined($self->{x_max_value}) ) {
+					( $xe, $ye ) = $self->val_to_pixel( $self->{_data}->get_x($i + 1), $values[$i + 1], $j );
+				} else {
+					( $xe, $ye ) = $self->val_to_pixel($i + 2, $values[$i + 1], $j);
+				} # end if
+				$xe += $offset;
+				$ye -= $offset;
+				$points_cache[$i + 1][$j] = { coords => [$xe, $ye] };
+			} # end if
+			
+			# Draw the line segment
+			$self->draw_line( $points_cache[$i - 1][$j], 
+			                  $points_cache[$i][$j], 
+			                  $points_cache[$i + 1][$j], 
+			                  $type, 
+			                  $dsci );
+			
+			# Draw the end cap if last segment
+			if( $i == $self->{_data}->num_points() - 1 ) {
+				my $poly = new GD::Polygon;
+				$poly->addPt( $points_cache[$i][$j]{face}[0], $points_cache[$i][$j]{face}[1] );
+				$poly->addPt( $points_cache[$i][$j]{face}[2], $points_cache[$i][$j]{face}[3] );
+				$poly->addPt( $points_cache[$i][$j]{face}[2] + $self->{line_depth}, $points_cache[$i][$j]{face}[3] - $self->{line_depth} );
+				$poly->addPt( $points_cache[$i][$j]{face}[0] + $self->{line_depth}, $points_cache[$i][$j]{face}[1] - $self->{line_depth} );
+				if( $self->{'3d_shading'} ) {
+					$g->filledPolygon( $poly, $self->{'3d_shadows'}[$dsci] );
+				} else {
+					$g->filledPolygon( $poly, $dsci );
+				} # end if
+				$g->polygon( $poly, $self->{fgci} );
+			} # end if
+
 		} # end for -- $self->{_data}->num_sets()
 	} # end for -- $self->{_data}->num_points()
 
 } # end sub draw_data_overwrite
 
-# [JAW] Modified to work on data point, not data set
-# for better rendering results.
-# Based on MVERB source
-sub draw_line # ($xs, $ys, $xe, $ye, $type, $colour_index)
+# ----------------------------------------------------------
+# Sub: draw_line
+#
+# Args: $prev, $this, $next, $type, $clr
+#	$prev       A hash ref for the prev point's object
+#	$prev       A hash ref for this point's object
+#	$next       A hash ref for the next point's object
+#	$type       A predefined line type (2..4) = (dashed, dotted, dashed & dotted)
+#	$clr        The color (colour) index to use for the fill
+#
+# Point "Object" has these properties:
+#	coords      A 2 element array of the coordinates for the line 
+#	            (this should be filled in before calling)
+#	face        An 4 element array of end points for the face 
+#	            polygon. This will be populated by this method.
+#
+# Description: Draws a line segment in 3d extrusion that 
+# connects the prev point the the this point. The next point
+# is used to calculate the mitre at the joint.
+# ----------------------------------------------------------
+# Date      Modification                              Author
+# ----------------------------------------------------------
+# 18SEP1999 Modified MVERB source to work on data 
+#           point, not data set for better rendering     JAW
+# 19SEP1999 Ploygon'd line rendering for better effect   JAW
+# 19AUG2000 Made line width perpendicular                JAW
+# 19AUG2000 Changed parameters to use %line_seg hash/obj JAW
+# 20AUG2000 Mitred joints of line segments               JAW
+# ----------------------------------------------------------
+sub draw_line
 {
 	my $self = shift;
-	my ($xs, $ys, $xe, $ye, $type, $clr) = @_;
+	my( $prev, $this, $next, $type, $clr ) = @_;
+	my $xs = $prev->{coords}[0];
+	my $ys = $prev->{coords}[1];
+	my $xe = $this->{coords}[0];
+	my $ye = $this->{coords}[1];
 
 	my $lw = $self->{line_width};
 	my $lts = $self->{line_type_scale};
@@ -271,36 +338,123 @@ sub draw_line # ($xs, $ys, $xe, $ye, $type, $colour_index)
 	# Need the setstyle to reset 
 	$self->{graph}->setStyle(@pattern) if (@pattern);
 
-	# CONTRIB Jeremy Wadsack
+	#
+	# Find the x and y offsets for the edge of the front face 
+	# Do this by adjusting them perpendicularly from the line
+	# half the line width in front and in back. 
+	#
+	my( $lwyoff, $lwxoff );
+	if( $xe == $xs ) {
+		$lwxoff = $lw / 2;
+		$lwyoff = 0;
+	} elsif( $ye == $ys ) {
+		$lwxoff = 0;
+		$lwyoff = $lw / 2;
+	} else {
+		my $ln = sqrt( ($ys-$ye)**2 + ($xe-$xs)**2 );
+		$lwyoff = ($xe-$xs) / $ln  * $lw / 2;
+		$lwxoff = ($ys-$ye) / $ln * $lw / 2;
+	} # end if
+
+	# For first line, figure beginning point
+	unless( defined $prev->{face}[0] ) {
+		$prev->{face} = [];
+		$prev->{face}[0] = $xs - $lwxoff;
+		$prev->{face}[1] = $ys - $lwyoff;
+		$prev->{face}[2] = $xs + $lwxoff;
+		$prev->{face}[3] = $ys + $lwyoff;
+	} # end unless
+	
+	# Calc and store this point's face coords
+	unless( defined $this->{face}[0] ) {
+		$this->{face} = [];
+		$this->{face}[0] = $xe - $lwxoff;
+		$this->{face}[1] = $ye - $lwyoff;
+		$this->{face}[2] = $xe + $lwxoff;
+		$this->{face}[3] = $ye + $lwyoff;
+	} # end if
+	
+	# Now find next point and nudge these coords to mitre
+	if( ref $next->{coords} eq 'ARRAY' ) {
+		my( $lwyo2, $lwxo2 );
+		my( $x2, $y2 ) = @{$next->{coords}};
+		if( $x2 == $xe ) {
+			$lwxo2 = $lw / 2;
+			$lwyo2 = 0;
+		} elsif( $y2 == $ye ) {
+			$lwxo2 = 0;
+			$lwyo2 = $lw / 2;
+		} else {
+			my $ln2 = sqrt( ($ye-$y2)**2 + ($x2-$xe)**2 );
+			$lwyo2 = ($x2-$xe) / $ln2  * $lw / 2;
+			$lwxo2 = ($ye-$y2) / $ln2 * $lw / 2;
+		} # end if
+		$next->{face} = [];
+		$next->{face}[0] = $x2 - $lwxo2;
+		$next->{face}[1] = $y2 - $lwyo2;
+		$next->{face}[2] = $x2 + $lwxo2;
+		$next->{face}[3] = $y2 + $lwyo2;
+	
+		# Now get the intersecting coordinates
+		my $mt = ($ye - $ys)/($xe - $xs);
+		my $mn = ($y2 - $ye)/($x2 - $xe);
+		my $bt = $this->{face}[1] - $this->{face}[0] * $mt;
+		my $bn = $next->{face}[1] - $next->{face}[0] * $mn;
+		if( $mt != $mn ) {
+			$this->{face}[0] = ($bn - $bt) / ($mt - $mn);
+		} # end if
+		$this->{face}[1] = $mt * $this->{face}[0] + $bt;
+		$bt = $this->{face}[3] - $this->{face}[2] * $mt;
+		$bn = $next->{face}[3] - $next->{face}[2] * $mn;
+		if( $mt != $mn ) {
+			$this->{face}[2] = ($bn - $bt) / ($mt - $mn);
+		} # end if
+		$this->{face}[3] = $mt * $this->{face}[2] + $bt;
+	} # end if
+
+
+	# Make the top/bottom polygon
+	my $poly = new GD::Polygon;
+	if( ($ys-$ye)/($xe-$xs) > 1 ) {
+		$poly->addPt( $prev->{face}[2], $prev->{face}[3] );
+		$poly->addPt( $this->{face}[2], $this->{face}[3] );
+		$poly->addPt( $this->{face}[2] + $self->{line_depth}, $this->{face}[3] - $self->{line_depth} );
+		$poly->addPt( $prev->{face}[2] + $self->{line_depth}, $prev->{face}[3] - $self->{line_depth} );
+		if( $self->{'3d_shading'} &&  $style == $clr ) {
+			$self->{graph}->filledPolygon( $poly, $self->{'3d_shadows'}[$clr] );
+		} else {
+			$self->{graph}->filledPolygon( $poly, $style );
+		} # end if
+	} else {
+		$poly->addPt( $prev->{face}[0], $prev->{face}[1] );
+		$poly->addPt( $this->{face}[0], $this->{face}[1] );
+		$poly->addPt( $this->{face}[0] + $self->{line_depth}, $this->{face}[1] - $self->{line_depth} );
+		$poly->addPt( $prev->{face}[0] + $self->{line_depth}, $prev->{face}[1] - $self->{line_depth} );
+		if( $self->{'3d_shading'} &&  $style == $clr ) {
+			$self->{graph}->filledPolygon( $poly, $self->{'3d_highlights'}[$clr] );
+		} else {
+			$self->{graph}->filledPolygon( $poly, $style );
+		} # end if
+	} # end if
+	$self->{graph}->polygon( $poly, $self->{fgci} );
+
 	# *** This paints dashed and dotted patterns on the faces of
 	#     the polygons. They don't look very good though. Would it
 	#     be better to extrude the style as well as the lines?
 	#     Otherwise could also be improved by using gdTiled instead of 
 	#     gdStyled and making the tile a transform of the line style
-	#     for each face.
-	
-	# make the top/bottom polygon
-	my $poly = new GD::Polygon;
-	my $lwoff = $lw/2;
-	if( ($ys-$ye)/($xe-$xs) > 1 ) {
-		$lwoff = -$lwoff;
-	} # end if
-	$poly->addPt( $xs, $ys - $lwoff );
-	$poly->addPt( $xe, $ye - $lwoff );
-	$poly->addPt( $xe + $self->{line_depth}, $ye - $lwoff - $self->{line_depth} );
-	$poly->addPt( $xs + $self->{line_depth}, $ys - $lwoff - $self->{line_depth} );
+	#     for each face. [JAW]
 
-	$self->{graph}->filledPolygon( $poly, $style );
-	$self->{graph}->polygon( $poly, $self->{fgci} );
-
-	# make the face polygon
+	# Make the face polygon
 	$poly = new GD::Polygon;
-	$poly->addPt( $xs, $ys - ($lw/2) );
-	$poly->addPt( $xe, $ye - ($lw/2) );
-	$poly->addPt( $xe, $ye + ($lw/2) );
-	$poly->addPt( $xs, $ys + ($lw/2) );
+	$poly->addPt( $prev->{face}[0], $prev->{face}[1] );
+	$poly->addPt( $this->{face}[0], $this->{face}[1] );
+	$poly->addPt( $this->{face}[2], $this->{face}[3] );
+	$poly->addPt( $prev->{face}[2], $prev->{face}[3] );
+
 	$self->{graph}->filledPolygon( $poly, $style );
 	$self->{graph}->polygon( $poly, $self->{fgci} );
+
 } # end draw line
 
 # Copied from MVERB source
