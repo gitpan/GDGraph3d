@@ -32,7 +32,7 @@ use GD::Graph::colour qw(:colours);
 use Carp;
 
 @GD::Graph::axestype3d::ISA = qw(GD::Graph::axestype);
-$GD::Graph::axestype3d::VERSION = '0.40';
+$GD::Graph::axestype3d::VERSION = '0.51';
 
 # Commented inheritance from GD::Graph::axestype unless otherwise noted.
 

@@ -2,6 +2,9 @@ Revision history for Perl extension GD-Graph3d.
 
 See individual files for file-specific changes.
 
+0.51 Aug 23 2000
+	- Fixed bug in shading with cycle_clrs on
+	- Fixed bug in shading on lines of positive or negative slope
 0.50 Aug 19-21 2000
 	- Sent patch to MVERB for pie.pm -- 100% didn't color edge and 
 	  length and width were one pixel too wide

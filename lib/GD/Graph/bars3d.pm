@@ -19,6 +19,7 @@
 # 2000APR18 Modified to be compatible with GD::Graph 1.30               JAW
 # 2000APR24 Fixed a lot of rendering bugs and added shading             JAW
 # 2000AUG21 Added 3d shading                                            JAW
+# 2000AUG24 Fixed shading on cycle_clrs option                          JAW
 #==========================================================================
 package GD::Graph::bars3d;
 
@@ -29,7 +30,7 @@ use GD::Graph::utils qw(:all);
 use GD::Graph::colour qw(:colours);
 
 @GD::Graph::bars3d::ISA = qw(GD::Graph::axestype3d);
-$GD::Graph::bars3d::VERSION = '0.41';
+$GD::Graph::bars3d::VERSION = '0.51';
 
 my %Defaults = (
 	# Spacing between the bars
@@ -103,22 +104,27 @@ sub draw_data
 				if ($self->{cumulate});
 
 			# Pick a data colour, calc shading colors too, if requested
-			my( @rgb ) = $self->pick_data_clr( $j );
+			# cycle_clrs option sets the color based on the point, not the dataset.
+			my @rgb;
+			if( $self->{cycle_clrs} ) {
+				@rgb = $self->pick_data_clr( $i + 1 );
+			} else {
+				@rgb = $self->pick_data_clr( $j );
+			} # end if
 			my $dsci = $self->set_clr( @rgb );
 			if( $self->{'3d_shading'} ) {
 				$self->{'3d_highlights'}[$dsci] = $self->set_clr( $self->_brighten( @rgb ) );
 				$self->{'3d_shadows'}[$dsci]    = $self->set_clr( $self->_darken( @rgb ) );
 			} # end if
-
+			
 			# contrib "Bremford, Mike" <mike.bremford@gs.com>
-			my $brci = $self->set_clr($self->pick_border_clr($j));
+			my $brci;
+			if( $self->{cycle_clrs} > 1 ) {
+				$brci = $self->set_clr($self->pick_data_clr($i + 1));
+			} else {
+				$brci = $self->set_clr($self->pick_border_clr($j));
+			} # end if
 
-			# cycle_clrs option sets the color based on the point, 
-			# not the dataset.
-			$dsci = $self->set_clr($self->pick_data_clr($i + 1))
-				if $self->{cycle_clrs};
-			$brci = $self->set_clr($self->pick_data_clr($i + 1))
-				if $self->{cycle_clrs} > 1;
 
 			# get coordinates of top and center of bar
 			($xp, $t) = $self->val_to_pixel($i + 1, $value, $j);

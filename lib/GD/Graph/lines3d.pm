@@ -17,10 +17,11 @@
 # 2000APR24 Fixed a lot of rendering bugs                               JAW
 # 2000AUG19 Changed render code so lines have consitent width           JAW
 # 2000AUG21 Added 3d shading                                            JAW
+# 2000AUG24 Fixed shading top/botttom vs. postive/negative slope        JAW
 #==========================================================================
 # TODO
-#		* Add shading to the top/bottom polygon (if desired) so that 
-#		  top polygon is brighter and bottom is darker than specifed color
+#		** The new mitred corners don't work well at data anomlies. Like
+#		   the set (0,0,1,0,0,0,1,0,1) Looks really wrong!
 #		* Write a draw_data_set that draws the line so they appear to pass 
 #		  through one another. This means drawing a border edge at each 
 #		  intersection of the data lines so the points of pass-through show.
@@ -36,7 +37,7 @@ use GD::Graph::axestype3d;
 use Data::Dumper;
 
 @GD::Graph::lines3d::ISA = qw( GD::Graph::axestype3d );
-$GD::Graph::lines3d::VERSION = '0.50';
+$GD::Graph::lines3d::VERSION = '0.51';
 
 my $PI = 4 * atan2(1, 1);
 
@@ -220,7 +221,7 @@ sub draw_data_overwrite {
 				$ye -= $offset;
 				$points_cache[$i + 1][$j] = { coords => [$xe, $ye] };
 			} # end if
-			
+
 			# Draw the line segment
 			$self->draw_line( $points_cache[$i - 1][$j], 
 			                  $points_cache[$i][$j], 
@@ -421,7 +422,11 @@ sub draw_line
 		$poly->addPt( $this->{face}[2] + $self->{line_depth}, $this->{face}[3] - $self->{line_depth} );
 		$poly->addPt( $prev->{face}[2] + $self->{line_depth}, $prev->{face}[3] - $self->{line_depth} );
 		if( $self->{'3d_shading'} &&  $style == $clr ) {
-			$self->{graph}->filledPolygon( $poly, $self->{'3d_shadows'}[$clr] );
+			if( ($ys-$ye)/($xe-$xs) > 0 ) {
+				$self->{graph}->filledPolygon( $poly, $self->{'3d_shadows'}[$clr] );
+			} else {
+				$self->{graph}->filledPolygon( $poly, $self->{'3d_highlights'}[$clr] );
+			} # end if
 		} else {
 			$self->{graph}->filledPolygon( $poly, $style );
 		} # end if
@@ -431,7 +436,11 @@ sub draw_line
 		$poly->addPt( $this->{face}[0] + $self->{line_depth}, $this->{face}[1] - $self->{line_depth} );
 		$poly->addPt( $prev->{face}[0] + $self->{line_depth}, $prev->{face}[1] - $self->{line_depth} );
 		if( $self->{'3d_shading'} &&  $style == $clr ) {
-			$self->{graph}->filledPolygon( $poly, $self->{'3d_highlights'}[$clr] );
+			if( ($ys-$ye)/($xe-$xs) < 0 ) {
+				$self->{graph}->filledPolygon( $poly, $self->{'3d_shadows'}[$clr] );
+			} else {
+				$self->{graph}->filledPolygon( $poly, $self->{'3d_highlights'}[$clr] );
+			} # end if
 		} else {
 			$self->{graph}->filledPolygon( $poly, $style );
 		} # end if
