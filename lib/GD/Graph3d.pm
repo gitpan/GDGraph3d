@@ -8,7 +8,7 @@
 # -------------------------------------------------------------------------
 #==========================================================================
 package GD::Graph3d;
-$GD::Graph3d::VERSION = '0.53';
+$GD::Graph3d::VERSION = '0.54';
 1;
 
 =head1 NAME
@@ -110,7 +110,7 @@ value for this option.
 
 =head1 VERSION
 
-0.53 (Septemnber 4, 2000)
+0.54 (Septemnber 4, 2000)
 
 =head1 INSTALLATION
 

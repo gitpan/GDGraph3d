@@ -2,6 +2,8 @@ Revision history for Perl extension GD-Graph3d.
 
 See individual files for file-specific changes.
 
+0.54 Sep 05 2000
+	- Fixed a bug in MANIFEST
 0.53 Sep 04 2000
 	- Added ability to render box_clr without box_axis
 	- Added a small segment to 'one point' line graphs
